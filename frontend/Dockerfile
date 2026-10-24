@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:20.18-alpine AS deps
+FROM node:26.11-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci --no-audit --no-fund
@@ -13,7 +13,7 @@ ARG BACKEND_INTERNAL_URL=http://backend:4000
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM node:20.18-alpine AS runtime
+FROM node:26.11-alpine AS runtime
 RUN apk add --no-cache tini wget
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
