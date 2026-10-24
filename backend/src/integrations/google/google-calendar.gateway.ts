@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { calendar, calendar_v3 } from '@googleapis/calendar';
-import { OAuth2Client } from 'google-auth-library';
+import { auth, calendar, calendar_v3 } from '@googleapis/calendar';
 import { AppConfig } from '../../config/app-config';
 import { AppError } from '../../common/errors';
 import {
@@ -11,6 +10,8 @@ import {
   GOOGLE_SCOPES,
   OAuthTokens,
 } from './calendar-gateway';
+
+type OAuth2Client = InstanceType<typeof auth.OAuth2>;
 
 const TIMEOUT_MS = 15_000;
 
@@ -28,9 +29,13 @@ export class GoogleCalendarGateway implements CalendarGateway {
     return this.config.googleConfigured;
   }
 
+  /**
+   * Uses the auth library bundled with @googleapis/calendar (not a separate google-auth-library
+   * dependency), so the OAuth client always matches the version the Calendar client expects.
+   */
   private oauth(): OAuth2Client {
     if (!this.configured) throw AppError.notConfigured('Google Calendar');
-    return new OAuth2Client(this.config.env.GOOGLE_CLIENT_ID, this.config.env.GOOGLE_CLIENT_SECRET, this.config.env.GOOGLE_REDIRECT_URI);
+    return new auth.OAuth2(this.config.env.GOOGLE_CLIENT_ID, this.config.env.GOOGLE_CLIENT_SECRET, this.config.env.GOOGLE_REDIRECT_URI);
   }
 
   private calendar(refreshToken: string): calendar_v3.Calendar {
