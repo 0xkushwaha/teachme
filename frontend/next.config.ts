@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
+import { backendInternalUrl } from './src/lib/backend-url';
 
-const backend = process.env.BACKEND_INTERNAL_URL ?? 'http://localhost:4000';
+const backend = backendInternalUrl();
 const isDev = process.env.NODE_ENV !== 'production';
 
 /**

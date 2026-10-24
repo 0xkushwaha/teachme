@@ -43,7 +43,6 @@ export const envSchema = z
     EMAIL_FROM: z.string().default('TeachMe <no-reply@teachme.local>'),
     SUPPORT_EMAIL: z.string().email().default('support@teachme.local'),
 
-    ERROR_WEBHOOK_URL: z.string().optional().default(''),
     METRICS_TOKEN: z.string().optional().default(''),
     TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
     /** Requests per minute per client for routes without a stricter limit. */

@@ -9,6 +9,19 @@
 
 Example single-host template: `infrastructure/deployment/docker-compose.prod.yml`.
 
+## Recommended host: Render (Singapore)
+`render.yaml` defines every service and env var: frontend, API, worker, PostgreSQL 16 and Redis-compatible Key Value with `noeviction`.
+1. Render → New → **Blueprint** → select this repo. Review the preview; fix any reported spec errors before applying.
+2. Fill in the `sync: false` prompts: `APP_URL` = `API_URL` = `CORS_ORIGINS` = `NEXT_PUBLIC_APP_URL` = your site origin, plus the Razorpay, Google and SMTP values. Render generates `JWT_ACCESS_SECRET`, `DATA_ENCRYPTION_KEY` and `METRICS_TOKEN`.
+3. Add your custom domain to **teachme-web**, the only origin browsers use. It proxies `/api` to the API over the private network.
+4. Point the Razorpay webhook at the **API's own** URL (`https://teachme-api.onrender.com/api/v1/payments/razorpay/webhook`), so the signed body is never proxied. Set the Google redirect URI to `<APP_URL>/api/v1/integrations/google/callback`.
+5. Migrations run automatically before each API deploy (`preDeployCommand`).
+6. After the first deploy, sign in and check that Admin › Audit log shows real client IPs (validates `TRUST_PROXY=2`).
+
+Use paid plans: free instances sleep, and free databases expire. For Indian data residency or larger scale, move to AWS Mumbai (ECS/Fargate, RDS, ElastiCache) using the Docker images below.
+
+Self-hosted VM path: copy `infrastructure/deployment/backend.env.example` → `backend.env` and `.env.example` → `.env` on the server (both git-ignored), then use `docker-compose.prod.yml`.
+
 ## Build images
 ```bash
 docker build -t $REGISTRY/teachme-backend:$TAG backend
