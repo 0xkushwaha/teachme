@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { calendar_v3, google } from 'googleapis';
+import { calendar, calendar_v3 } from '@googleapis/calendar';
 import { OAuth2Client } from 'google-auth-library';
 import { AppConfig } from '../../config/app-config';
 import { AppError } from '../../common/errors';
@@ -15,7 +15,7 @@ import {
 const TIMEOUT_MS = 15_000;
 
 /**
- * Google Calendar API v3 via the official `googleapis` client.
+ * Google Calendar API v3 via the official `@googleapis/calendar` client.
  * Meet links are created with `conferenceData.createRequest` + `conferenceDataVersion=1`
  * and a unique `requestId`; Google may return the conference as `pending`, in which case
  * the meeting job polls `events.get` until it is `success` or `failure`.
@@ -30,17 +30,13 @@ export class GoogleCalendarGateway implements CalendarGateway {
 
   private oauth(): OAuth2Client {
     if (!this.configured) throw AppError.notConfigured('Google Calendar');
-    return new google.auth.OAuth2(
-      this.config.env.GOOGLE_CLIENT_ID,
-      this.config.env.GOOGLE_CLIENT_SECRET,
-      this.config.env.GOOGLE_REDIRECT_URI,
-    );
+    return new OAuth2Client(this.config.env.GOOGLE_CLIENT_ID, this.config.env.GOOGLE_CLIENT_SECRET, this.config.env.GOOGLE_REDIRECT_URI);
   }
 
   private calendar(refreshToken: string): calendar_v3.Calendar {
     const auth = this.oauth();
     auth.setCredentials({ refresh_token: refreshToken });
-    return google.calendar({ version: 'v3', auth, timeout: TIMEOUT_MS });
+    return calendar({ version: 'v3', auth, timeout: TIMEOUT_MS });
   }
 
   buildAuthUrl(state: string, loginHint?: string): string {

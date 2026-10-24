@@ -8,7 +8,6 @@ import { serverGet } from '@/lib/server-api';
 import type { Paginated, TeacherCard as T } from '@/types/api';
 
 type Subject = { id: string; slug: string; name: string; description: string; category: { slug: string; name: string } };
-export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

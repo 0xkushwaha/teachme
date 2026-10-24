@@ -1,4 +1,4 @@
-import { DynamicModule, MiddlewareConsumer, Module, NestModule, Provider } from '@nestjs/common';
+import { DynamicModule, MiddlewareConsumer, Module, NestModule, Provider, RequestMethod } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module';
@@ -16,7 +16,7 @@ import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { RequestContextMiddleware } from './middleware/request-context.middleware';
-import { HealthController } from './routes/health.controller';
+import { HealthController, MetricsController } from './routes/health.controller';
 import { PublicConfigController } from './routes/public-config.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -76,7 +76,7 @@ export class AppModule implements NestModule {
         SupportModule,
         ...(opts.extraImports ?? []),
       ],
-      controllers: [HealthController, PublicConfigController],
+      controllers: [HealthController, MetricsController, PublicConfigController],
       providers: [
         // Guard order matters: authenticate → CSRF (needs auth mode) → rate limit (keys by user).
         { provide: APP_GUARD, useClass: AuthGuard },
@@ -90,6 +90,6 @@ export class AppModule implements NestModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestContextMiddleware).forRoutes('*');
+    consumer.apply(RequestContextMiddleware).forRoutes({ path: '*path', method: RequestMethod.ALL });
   }
 }

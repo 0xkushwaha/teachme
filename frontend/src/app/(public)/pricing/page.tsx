@@ -6,7 +6,6 @@ import { serverGet } from '@/lib/server-api';
 import type { PlatformConfig } from '@/types/api';
 
 export const metadata: Metadata = { title: 'Pricing & fees' };
-export const revalidate = 60;
 
 export default async function PricingPage() {
   const c = await serverGet<PlatformConfig>('/platform/config');

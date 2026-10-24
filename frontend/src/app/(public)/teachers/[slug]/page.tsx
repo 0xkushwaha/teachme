@@ -8,7 +8,6 @@ import { serverGet } from '@/lib/server-api';
 import type { TeacherProfile } from '@/types/api';
 import { formatMoney } from '@/utils/format';
 
-export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

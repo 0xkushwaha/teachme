@@ -22,3 +22,6 @@ test-results/
 # logs
 *.log
 loadtest-results/*.json
+loadtest-results/tokens.json
+loadtest-results/*.log
+loadtest-results/resources.csv

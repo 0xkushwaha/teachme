@@ -7,7 +7,6 @@ import { HeroSearch } from '@/features/teachers/hero-search';
 import { serverGet } from '@/lib/server-api';
 import type { Catalogue, Paginated, PlatformConfig, TeacherCard as T } from '@/types/api';
 
-export const revalidate = 60;
 
 const STEPS = [
   { icon: CalendarCheck2, title: 'Pick a real time slot', body: 'Availability comes straight from each teacher’s working hours, in your timezone. Slots you see are bookable.' },

@@ -29,7 +29,7 @@ const schema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name').max(100),
   email: z.string().trim().email('Enter a valid email'),
   password: passwordRule,
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Please accept the terms to continue' }) }),
+  acceptTerms: z.literal(true, { message: 'Please accept the terms to continue' }),
 });
 type Values = z.infer<typeof schema>;
 

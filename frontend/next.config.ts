@@ -23,6 +23,8 @@ const csp = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Lets a second dev server (e.g. the E2E stack) run without sharing .next with the main one.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   poweredByHeader: false,
   reactStrictMode: true,
   images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },

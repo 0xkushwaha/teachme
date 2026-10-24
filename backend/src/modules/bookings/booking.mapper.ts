@@ -73,7 +73,7 @@ export const BOOKING_INCLUDE = {
 
 export function toIcs(b: Full, meetUrl: string | null, appUrl: string): string {
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-  const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
   const description = [`TeachMe session: ${b.subject.name} with ${b.teacher.user.fullName}`, meetUrl ? `Google Meet: ${meetUrl}` : '', `Manage: ${appUrl}/student/sessions/${b.id}`]
     .filter(Boolean)
     .join('\n');

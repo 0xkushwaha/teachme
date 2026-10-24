@@ -7,6 +7,7 @@ import { CurrentUser, Public, SkipCsrf } from '../../common/decorators';
 import type { AuthUser } from '../../common/auth-user';
 import type { AuthedRequest } from '../../common/guards/auth.guard';
 import { PrismaService } from '../../database/prisma.service';
+import { AppError } from '../../common/errors';
 import { AuthService, ClientInfo } from './auth.service';
 import { ChangePasswordDto, EmailDto, LoginDto, RegisterDto, ResetPasswordDto, TokenDto } from './dto/auth.dto';
 import { clearAuthCookies, CSRF_COOKIE, ensureCsrfCookie, REFRESH_COOKIE, setAuthCookies } from './cookies';
@@ -73,7 +74,7 @@ export class AuthController {
     const token = req.cookies?.[REFRESH_COOKIE] ?? (req.body as { refreshToken?: string })?.refreshToken;
     if (!token) {
       clearAuthCookies(res, this.config);
-      return res.status(401).json({ error: { code: 'UNAUTHENTICATED', message: 'No session' } });
+      throw AppError.unauthenticated('No session');
     }
     try {
       const issued = await this.auth.refresh(token, clientInfo(req));

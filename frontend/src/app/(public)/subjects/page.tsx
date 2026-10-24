@@ -7,7 +7,6 @@ import type { Catalogue } from '@/types/api';
 import { formatMoney } from '@/utils/format';
 
 export const metadata: Metadata = { title: 'Browse subjects', description: 'Every subject taught on TeachMe, with the number of verified teachers and starting rates.' };
-export const revalidate = 60;
 
 export default async function SubjectsPage() {
   const catalogue = await serverGet<Catalogue>('/subjects');

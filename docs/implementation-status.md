@@ -1,6 +1,6 @@
 # Implementation status
 
-_Last updated: 2026-10-24 (session 2)_
+_Last updated: 2026-10-24 (session 3)_
 
 ## Done and verified
 
@@ -25,7 +25,7 @@ _Last updated: 2026-10-24 (session 2)_
 - **Outbox clock skew (real bug):** outbox rows were timestamped by the Node process but eligibility was compared with Postgres `now()`. A few ms of clock jitter made fresh events invisible to an immediate drain (flaky test; in production, multi-server clock skew). `OutboxService.publish` now inserts with database-side `now()`.
 - Integration tests no longer require a wiped DB (Prisma correctly refuses `migrate reset` from an AI agent); setup uses `migrate deploy` on a dedicated `*_test` database and tests use unique fixtures.
 
-## Session 2: frontend (uncommitted at time of writing)
+## Session 2: frontend
 
 `frontend/` — Next.js 15 (App Router), React 19, Tailwind 4, TanStack Query, React Hook Form + Zod, Radix primitives, Recharts, Luxon. 45 routes; `next build` and ESLint pass.
 
@@ -42,13 +42,22 @@ Bugs found and fixed in session 2: honorific greetings ("Welcome, Dr."); empty n
 
 Tests after session 2: backend unit **68/68**, integration **47/47** (3 consecutive runs).
 
+## Session 3: E2E, load testing, delivery
+
+- **E2E (Playwright, `frontend/tests/e2e`)**: isolated stack (`backend/test/e2e/e2e-server.ts` on :4100 with `teachme_e2e` DB, Next on :3100). Razorpay/Google HTTP faked (HMAC real), email via real SMTP → Mailpit. Covers all 11 journey steps + public smoke on desktop and mobile. **12/12 passed** (4 passing runs during the session; 1 on the final code after the zod 4 upgrade and rendering change).
+- **Load tests (k6, `loadtest/`, `scripts/run-loadtest.sh`)**: results in [load-testing.md](load-testing.md) — 0 errors; p95 reads 9 ms, dashboards 13 ms, logins 42 ms, reservations 25 ms, webhooks 17 ms; 300-way same-slot race → exactly 1 reservation; 1,000 emails delivered in 2.1 s.
+- **Delivery**: backend/frontend Dockerfiles (multi-stage, non-root, tini, health checks — both built and booted locally), nginx ingress, production compose with migrate job, Prometheus config + alert rules, GitHub Actions CI (lint, types, unit, integration, migration drift check, E2E, builds, audit, Docker builds), Dependabot.
+- **Docs**: architecture, api, database, security (incl. endpoint authorization review), integrations, deployment (incl. backup/restore), operations runbook, load testing, README; `docs/openapi.json` exported (85 paths).
+
+Bugs found and fixed in session 3: `/auth/refresh` without a session crashed with a double response; `.ics` export didn’t escape `;` (corrupt calendar files); `/metrics` was unreachable (moved under URI versioning); backend Docker build OOM (switched `googleapis` → `@googleapis/calendar`); argon2 needed a build toolchain in the image; public pages were prerendered at build time without the API. Dependency audit: 8 backend / 3 frontend findings → **0** (zod 3 → 4, `@hookform/resolvers` 5, overrides for multer, deepmerge-ts, js-yaml, postcss).
+
+Final results (session 3): backend unit **69/69**, integration **49/49**, E2E **12/12**; lint, typecheck and production builds clean for both apps; `npm audit --omit=dev` 0 vulnerabilities.
+
 ## Not started yet (next sessions)
 1. Per-page `<title>` metadata for client dashboard pages (currently the site default).
-2. **E2E** (Playwright) including stubbed Checkout via a test-only backend entry point.
-3. **Load tests** (k6) and documented results.
-4. Dockerfiles, CI workflow, nginx/ingress config, monitoring config.
-5. Docs: architecture, api (OpenAPI export), database, security, deployment, integrations, runbook, README.
-6. ESLint run + fixes; `npm audit` review.
+2. Admin MFA (TOTP/SSO); legal review of terms/privacy/refund pages.
+3. Load test on production-like staging (2+ API replicas, separate load generator).
+4. Live verification with real Razorpay test keys and a Google OAuth client (code paths covered by integration/E2E tests with provider fakes only).
 
 ## Credentials still required (external)
 - Razorpay test keys + webhook secret (dashboard → Settings → API keys / Webhooks)

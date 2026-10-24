@@ -108,3 +108,31 @@ describe('Idempotency keys', () => {
     expect(await ctx.prisma.booking.count({ where: { studentId: student.user.id } })).toBe(1);
   });
 });
+
+describe('Session refresh without a session', () => {
+  let ctx: TestContext;
+  beforeAll(async () => (ctx = await createTestApp()));
+  afterAll(() => ctx.close());
+
+  it('returns a single clean 401 (regression: double response crashed the handler)', async () => {
+    const agent = ctx.http();
+    const csrf = await agent.get('/api/v1/auth/csrf');
+    const token = csrf.body.csrfToken as string;
+    const res = await agent.post('/api/v1/auth/refresh').set('x-csrf-token', token).set('Origin', 'http://localhost:3000');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHENTICATED');
+  });
+});
+
+describe('Operational endpoints', () => {
+  let ctx: TestContext;
+  beforeAll(async () => (ctx = await createTestApp()));
+  afterAll(() => ctx.close());
+
+  it('serves health under /api/v1 and Prometheus metrics at /metrics', async () => {
+    expect((await ctx.http().get('/api/v1/health/live')).status).toBe(200);
+    const m = await ctx.http().get('/metrics');
+    expect(m.status).toBe(200);
+    expect(m.text).toContain('http_request_duration_seconds');
+  });
+});

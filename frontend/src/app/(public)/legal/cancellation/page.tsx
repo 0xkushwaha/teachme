@@ -4,7 +4,6 @@ import type { PlatformConfig } from '@/types/api';
 import { LegalPage } from '../legal-page';
 
 export const metadata: Metadata = { title: 'Cancellation & refund policy' };
-export const revalidate = 60;
 
 export default async function Cancellation() {
   const c = await serverGet<PlatformConfig>('/platform/config');
