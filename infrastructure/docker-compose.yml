@@ -1,0 +1,78 @@
+# Local development stack. Production uses managed PostgreSQL / Redis (see docs/deployment.md).
+name: teachme
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: teachme
+      POSTGRES_PASSWORD: teachme_dev_password
+      POSTGRES_DB: teachme
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=256MB"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teachme -d teachme"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Local SMTP sink with a web UI at http://localhost:8025 — real SMTP delivery, never leaves the machine.
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports: ["1025:1025", "8025:8025"]
+
+  backend:
+    profiles: ["app"]
+    build: { context: ../backend }
+    env_file: ../backend/.env
+    environment:
+      DATABASE_URL: postgresql://teachme:teachme_dev_password@postgres:5432/teachme?schema=public&connection_limit=20
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    command: ["node", "dist/src/server.js"]
+    ports: ["4000:4000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    profiles: ["app"]
+    build: { context: ../backend }
+    env_file: ../backend/.env
+    environment:
+      DATABASE_URL: postgresql://teachme:teachme_dev_password@postgres:5432/teachme?schema=public&connection_limit=10
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    command: ["node", "dist/src/worker.js"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  frontend:
+    profiles: ["app"]
+    build:
+      context: ../frontend
+      args:
+        NEXT_PUBLIC_APP_URL: http://localhost:3000
+    environment:
+      BACKEND_INTERNAL_URL: http://backend:4000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+
+volumes:
+  pgdata:
+  redisdata:
