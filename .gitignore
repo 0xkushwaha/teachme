@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+# builds
+dist/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+# env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+# logs
+*.log
+loadtest-results/*.json
+loadtest-results/tokens.json
+loadtest-results/*.log
+loadtest-results/resources.csv

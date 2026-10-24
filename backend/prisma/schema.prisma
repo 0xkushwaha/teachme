@@ -1,0 +1,650 @@
+// TeachMe database schema.
+// Conventions:
+//  * All timestamps are `timestamptz` and stored in UTC.
+//  * Money is stored as integer minor units (paise for INR) in `*Minor` columns — never floats.
+//  * Booking overlap protection lives in a PostgreSQL exclusion constraint added in the
+//    first migration (Prisma cannot express it); see docs/database.md.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  DELETED
+}
+
+enum TeacherApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum ExceptionType {
+  UNAVAILABLE
+  AVAILABLE
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  PAYMENT_FAILED
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  SUBMITTED
+  PROCESSED
+  FAILED
+}
+
+enum CalendarConnectionStatus {
+  ACTIVE
+  REVOKED
+  ERROR
+}
+
+enum CalendarSyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+  DELETED
+}
+
+enum MeetingStatus {
+  PENDING
+  READY
+  FAILED
+  CANCELLED
+  NOT_CONFIGURED
+}
+
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+  SMS
+  WHATSAPP
+}
+
+enum NotificationCategory {
+  ACCOUNT
+  BOOKING
+  REMINDER
+  PAYMENT
+  SYSTEM
+  MARKETING
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum OutboxStatus {
+  PENDING
+  DISPATCHED
+  FAILED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id               String     @id @default(uuid()) @db.Uuid
+  email            String     @unique
+  passwordHash     String
+  role             Role       @default(STUDENT)
+  status           UserStatus @default(ACTIVE)
+  fullName         String
+  phone            String?
+  timezone         String     @default("Asia/Kolkata")
+  emailVerifiedAt  DateTime?  @db.Timestamptz(3)
+  lastLoginAt      DateTime?  @db.Timestamptz(3)
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?  @db.Timestamptz(3)
+  privacyConsentAt DateTime?  @db.Timestamptz(3)
+  deletedAt        DateTime?  @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @db.Timestamptz(3)
+
+  studentProfile          StudentProfile?
+  teacherProfile          TeacherProfile?
+  sessions                Session[]
+  tokens                  VerificationToken[]
+  bookingsAsStudent       Booking[]                @relation("StudentBookings")
+  calendarConnections     CalendarConnection[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  auditLogs               AuditLog[]
+  supportTickets          SupportTicket[]
+
+  @@index([role, status, createdAt])
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  familyId  String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  rotatedAt DateTime? @db.Timestamptz(3)
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+model VerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model StudentProfile {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @db.Uuid
+  gradeLevel        String?
+  learningGoals     String?
+  preferredLanguage String?
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TeacherProfile {
+  id               String                @id @default(uuid()) @db.Uuid
+  userId           String                @unique @db.Uuid
+  slug             String                @unique
+  headline         String
+  bio              String
+  qualifications   Json                  @default("[]")
+  yearsExperience  Int                   @default(0)
+  languages        String[]
+  timezone         String                @default("Asia/Kolkata")
+  approvalStatus   TeacherApprovalStatus @default(PENDING)
+  sessionDurations Int[]                 @default([60])
+  bufferMinutes    Int                   @default(10)
+  minNoticeMinutes Int                   @default(720)
+  maxAdvanceDays   Int                   @default(60)
+  avatarUrl        String?
+  approvedAt       DateTime?             @db.Timestamptz(3)
+  approvedById     String?               @db.Uuid
+  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime              @updatedAt @db.Timestamptz(3)
+
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects               TeacherSubject[]
+  availability           TeacherAvailability[]
+  availabilityExceptions AvailabilityException[]
+  bookings               Booking[]
+
+  @@index([approvalStatus])
+}
+
+model SubjectCategory {
+  id        String    @id @default(uuid()) @db.Uuid
+  slug      String    @unique
+  name      String
+  sortOrder Int       @default(0)
+  subjects  Subject[]
+}
+
+model Subject {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String
+  categoryId  String   @db.Uuid
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  category SubjectCategory  @relation(fields: [categoryId], references: [id])
+  teachers TeacherSubject[]
+  bookings Booking[]
+
+  @@index([categoryId, isActive])
+}
+
+model TeacherSubject {
+  teacherId       String   @db.Uuid
+  subjectId       String   @db.Uuid
+  hourlyRateMinor Int
+  currency        String   @default("INR") @db.Char(3)
+  levels          String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject Subject        @relation(fields: [subjectId], references: [id])
+
+  @@id([teacherId, subjectId])
+  @@index([subjectId, isActive, hourlyRateMinor])
+}
+
+/// Recurring weekly window in the teacher's local timezone. Minutes from local midnight.
+model TeacherAvailability {
+  id          String   @id @default(uuid()) @db.Uuid
+  teacherId   String   @db.Uuid
+  dayOfWeek   Int // ISO: 1 = Monday ... 7 = Sunday
+  startMinute Int
+  endMinute   Int
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, dayOfWeek])
+}
+
+/// One-off override expressed as absolute UTC instants (holidays, breaks, extra hours).
+model AvailabilityException {
+  id        String        @id @default(uuid()) @db.Uuid
+  teacherId String        @db.Uuid
+  type      ExceptionType @default(UNAVAILABLE)
+  startAt   DateTime      @db.Timestamptz(3)
+  endAt     DateTime      @db.Timestamptz(3)
+  reason    String?
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, startAt, endAt])
+}
+
+model Booking {
+  id                 String        @id @default(uuid()) @db.Uuid
+  studentId          String        @db.Uuid
+  teacherId          String        @db.Uuid
+  subjectId          String        @db.Uuid
+  startAt            DateTime      @db.Timestamptz(3)
+  endAt              DateTime      @db.Timestamptz(3)
+  /// endAt + teacher buffer; the exclusion constraint covers [startAt, blockedUntil).
+  blockedUntil       DateTime      @db.Timestamptz(3)
+  durationMinutes    Int
+  studentTimezone    String
+  teacherTimezone    String
+  status             BookingStatus @default(PENDING_PAYMENT)
+  holdExpiresAt      DateTime?     @db.Timestamptz(3)
+  priceMinor         Int
+  platformFeeMinor   Int           @default(0)
+  taxMinor           Int           @default(0)
+  totalMinor         Int
+  currency           String        @default("INR") @db.Char(3)
+  policySnapshot     Json
+  studentNote        String?
+  rescheduleCount    Int           @default(0)
+  confirmedAt        DateTime?     @db.Timestamptz(3)
+  cancelledAt        DateTime?     @db.Timestamptz(3)
+  cancelledById      String?       @db.Uuid
+  cancellationReason String?
+  completedAt        DateTime?     @db.Timestamptz(3)
+  version            Int           @default(0)
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(3)
+
+  student       User                   @relation("StudentBookings", fields: [studentId], references: [id])
+  teacher       TeacherProfile         @relation(fields: [teacherId], references: [id])
+  subject       Subject                @relation(fields: [subjectId], references: [id])
+  statusHistory BookingStatusHistory[]
+  payments      Payment[]
+  refunds       Refund[]
+  calendarEvent CalendarEvent?
+  meeting       Meeting?
+
+  @@index([teacherId, startAt])
+  @@index([studentId, startAt])
+  @@index([status, holdExpiresAt])
+  @@index([status, startAt])
+}
+
+model BookingStatusHistory {
+  id         String         @id @default(uuid()) @db.Uuid
+  bookingId  String         @db.Uuid
+  fromStatus BookingStatus?
+  toStatus   BookingStatus
+  actorId    String?        @db.Uuid
+  reason     String?
+  metadata   Json?
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+model Payment {
+  id                    String        @id @default(uuid()) @db.Uuid
+  bookingId             String        @db.Uuid
+  provider              String        @default("RAZORPAY")
+  providerOrderId       String        @unique
+  providerPaymentId     String?       @unique
+  amountMinor           Int
+  currency              String        @db.Char(3)
+  status                PaymentStatus @default(CREATED)
+  method                String?
+  failureReason         String?
+  capturedAt            DateTime?     @db.Timestamptz(3)
+  refundedMinor         Int           @default(0)
+  discrepancy           String?
+  discrepancyResolvedAt DateTime?     @db.Timestamptz(3)
+  lastReconciledAt      DateTime?     @db.Timestamptz(3)
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime      @updatedAt @db.Timestamptz(3)
+
+  booking Booking  @relation(fields: [bookingId], references: [id])
+  refunds Refund[]
+
+  @@index([bookingId])
+  @@index([status, createdAt])
+  @@index([discrepancy])
+}
+
+model Refund {
+  id               String       @id @default(uuid()) @db.Uuid
+  paymentId        String       @db.Uuid
+  bookingId        String       @db.Uuid
+  amountMinor      Int
+  status           RefundStatus @default(PENDING)
+  providerRefundId String?      @unique
+  reason           String
+  initiatedById    String?      @db.Uuid
+  failureReason    String?
+  attempts         Int          @default(0)
+  processedAt      DateTime?    @db.Timestamptz(3)
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(3)
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([status])
+  @@index([bookingId])
+}
+
+model WebhookEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  provider    String
+  eventId     String
+  eventType   String
+  payload     Json
+  processedAt DateTime? @db.Timestamptz(3)
+  error       String?
+  receivedAt  DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@unique([provider, eventId])
+  @@index([provider, processedAt])
+}
+
+model CalendarConnection {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  userId                String                   @db.Uuid
+  provider              String                   @default("GOOGLE")
+  accountEmail          String?
+  encryptedRefreshToken String
+  scopes                String[]
+  status                CalendarConnectionStatus @default(ACTIVE)
+  lastError             String?
+  lastSyncedAt          DateTime?                @db.Timestamptz(3)
+  connectedAt           DateTime                 @default(now()) @db.Timestamptz(3)
+  revokedAt             DateTime?                @db.Timestamptz(3)
+  updatedAt             DateTime                 @updatedAt @db.Timestamptz(3)
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events CalendarEvent[]
+
+  @@unique([userId, provider])
+  @@index([status])
+}
+
+model CalendarEvent {
+  id              String             @id @default(uuid()) @db.Uuid
+  bookingId       String             @unique @db.Uuid
+  connectionId    String?            @db.Uuid
+  calendarId      String             @default("primary")
+  providerEventId String             @unique
+  status          CalendarSyncStatus @default(PENDING)
+  syncedStartAt   DateTime?          @db.Timestamptz(3)
+  syncedEndAt     DateTime?          @db.Timestamptz(3)
+  attempts        Int                @default(0)
+  lastError       String?
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @db.Timestamptz(3)
+
+  booking    Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  connection CalendarConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+}
+
+model Meeting {
+  id                  String        @id @default(uuid()) @db.Uuid
+  bookingId           String        @unique @db.Uuid
+  provider            String        @default("GOOGLE_MEET")
+  conferenceRequestId String        @unique
+  conferenceId        String?
+  joinUrl             String?
+  status              MeetingStatus @default(PENDING)
+  attempts            Int           @default(0)
+  lastError           String?
+  createdAt           DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime      @updatedAt @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model Notification {
+  id                String               @id @default(uuid()) @db.Uuid
+  userId            String               @db.Uuid
+  type              String
+  category          NotificationCategory
+  channel           NotificationChannel
+  title             String
+  body              String
+  data              Json?
+  dedupeKey         String               @unique
+  status            DeliveryStatus       @default(PENDING)
+  providerMessageId String?
+  attempts          Int                  @default(0)
+  lastError         String?
+  sentAt            DateTime?            @db.Timestamptz(3)
+  readAt            DateTime?            @db.Timestamptz(3)
+  createdAt         DateTime             @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, channel, readAt])
+  @@index([userId, channel, createdAt])
+  @@index([status, channel])
+}
+
+model NotificationPreference {
+  userId   String               @db.Uuid
+  channel  NotificationChannel
+  category NotificationCategory
+  enabled  Boolean
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, channel, category])
+}
+
+model NotificationTemplate {
+  key         String   @id
+  description String
+  subject     String
+  htmlBody    String
+  textBody    String
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+}
+
+/// Transactional outbox: written in the same DB transaction as the state change it describes.
+model OutboxEvent {
+  id           String       @id @default(uuid()) @db.Uuid
+  type         String
+  aggregateId  String
+  payload      Json
+  status       OutboxStatus @default(PENDING)
+  attempts     Int          @default(0)
+  lastError    String?
+  availableAt  DateTime     @default(now()) @db.Timestamptz(3)
+  dispatchedAt DateTime?    @db.Timestamptz(3)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([status, availableAt])
+}
+
+/// Durable record of integration operations (calendar, meet, email, refunds) for ops visibility & retry.
+model JobRecord {
+  id         String    @id @default(uuid()) @db.Uuid
+  queue      String
+  name       String
+  jobKey     String    @unique
+  entityType String?
+  entityId   String?
+  status     JobStatus @default(PENDING)
+  attempts   Int       @default(0)
+  lastError  String?
+  payload    Json?
+  startedAt  DateTime? @db.Timestamptz(3)
+  finishedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([status, updatedAt])
+  @@index([entityType, entityId])
+}
+
+model IdempotencyKey {
+  id             String            @id @default(uuid()) @db.Uuid
+  userId         String            @db.Uuid
+  key            String
+  method         String
+  path           String
+  requestHash    String
+  status         IdempotencyStatus @default(IN_PROGRESS)
+  responseStatus Int?
+  responseBody   Json?
+  expiresAt      DateTime          @db.Timestamptz(3)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+
+  @@unique([userId, key])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  actorRole  Role?
+  action     String
+  entityType String
+  entityId   String?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
+}
+
+model PlatformSetting {
+  key         String   @id
+  value       Json
+  description String?
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model SupportTicket {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String?             @db.Uuid
+  name      String
+  email     String
+  category  String
+  subject   String
+  message   String
+  bookingId String?             @db.Uuid
+  status    SupportTicketStatus @default(OPEN)
+  adminNote String?
+  createdAt DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime            @updatedAt @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}

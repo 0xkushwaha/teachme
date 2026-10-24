@@ -1,0 +1,36 @@
+groups:
+  - name: teachme
+    rules:
+      - alert: ApiHighErrorRate
+        expr: sum(rate(http_request_duration_seconds_count{status=~"5.."}[5m])) / sum(rate(http_request_duration_seconds_count[5m])) > 0.02
+        for: 5m
+        labels: { severity: page }
+        annotations: { summary: "API 5xx rate above 2% for 5 minutes" }
+      - alert: ApiSlowReads
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{method="GET"}[5m]))) > 0.5
+        for: 10m
+        labels: { severity: ticket }
+        annotations: { summary: "p95 GET latency above 500 ms" }
+      - alert: OutboxBacklog
+        expr: max(outbox_pending_events) > 200
+        for: 5m
+        labels: { severity: page }
+        annotations: { summary: "Transactional outbox not draining — is the worker running?" }
+      - alert: QueueBacklog
+        expr: max by (queue) (queue_waiting_jobs) > 500
+        for: 10m
+        labels: { severity: ticket }
+        annotations: { summary: "Queue {{ $labels.queue }} backlog growing" }
+      - alert: JobsDying
+        expr: sum by (queue) (increase(job_events_total{outcome="dead"}[30m])) > 5
+        labels: { severity: ticket }
+        annotations: { summary: "Jobs exhausting retries in {{ $labels.queue }} — see Admin › Integration health" }
+      - alert: PaymentDiscrepancies
+        expr: increase(payment_events_total{event=~"discrepancy|conflict_refund|signature_invalid|webhook_signature_invalid"}[1h]) > 0
+        labels: { severity: ticket }
+        annotations: { summary: "Payment anomalies detected ({{ $labels.event }})" }
+      - alert: EventLoopLag
+        expr: max(nodejs_eventloop_lag_p99_seconds) > 0.2
+        for: 5m
+        labels: { severity: ticket }
+        annotations: { summary: "Node event loop lag p99 above 200 ms" }

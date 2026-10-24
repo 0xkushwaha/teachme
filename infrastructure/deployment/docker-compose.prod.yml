@@ -1,0 +1,38 @@
+# Example production topology on a single Docker host (or as a template for ECS/Kubernetes).
+# PostgreSQL and Redis are MANAGED services (e.g. RDS/Cloud SQL + ElastiCache/Memorystore);
+# their URLs come from backend.env. Secrets are injected by the host's secret manager.
+name: teachme-prod
+
+x-backend: &backend
+  image: ${REGISTRY}/teachme-backend:${TAG}
+  env_file: ./backend.env          # never committed; see backend/.env.example
+  restart: unless-stopped
+  stop_grace_period: 30s           # graceful shutdown: finish in-flight requests / jobs
+
+services:
+  migrate:                          # run once per release, before rolling the API
+    <<: *backend
+    command: ["npx", "prisma", "migrate", "deploy"]
+    restart: "no"
+    profiles: ["migrate"]
+
+  backend-1: { <<: *backend }
+  backend-2: { <<: *backend }
+
+  worker:
+    <<: *backend
+    command: ["node", "dist/worker.js"]
+    healthcheck: { disable: true }
+
+  frontend:
+    image: ${REGISTRY}/teachme-frontend:${TAG}
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on: [backend-1, backend-2, frontend]
+    restart: unless-stopped

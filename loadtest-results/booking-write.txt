@@ -1,0 +1,27 @@
+
+     ✓ reserve 201/409
+     ✓ release 200
+
+   ✓ checks.........................: 100.00% 6000 out of 6000
+     data_received..................: 14 MB   115 kB/s
+     data_sent......................: 4.1 MB  34 kB/s
+     http_req_blocked...............: avg=19.98µs med=5µs     p(90)=12.04µs p(95)=16.91µs  p(99)=728.83µs max=5.08ms  
+     http_req_connecting............: avg=12.44µs med=0s      p(90)=0s      p(95)=0s       p(99)=689.9µs  max=5.03ms  
+     http_req_duration..............: avg=15.49ms med=14.83ms p(90)=21.49ms p(95)=22.89ms  p(99)=29.52ms  max=133.92ms
+       { expected_response:true }...: avg=15.49ms med=14.83ms p(90)=21.49ms p(95)=22.89ms  p(99)=29.52ms  max=133.92ms
+     ✓ { kind:release }.............: avg=12ms    med=11.4ms  p(90)=14.98ms p(95)=16.5ms   p(99)=21.33ms  max=133.92ms
+     ✓ { kind:reserve }.............: avg=18.97ms med=18.56ms p(90)=22.68ms p(95)=24.56ms  p(99)=33.51ms  max=116.4ms 
+     http_req_failed................: 0.03%   2 out of 6002
+     ✓ { kind:reserve }.............: 0.06%   2 out of 3001
+     http_req_receiving.............: avg=78.33µs med=70.66µs p(90)=108.4µs p(95)=126.66µs p(99)=198.95µs max=2.72ms  
+     http_req_sending...............: avg=33.31µs med=28.04µs p(90)=47.25µs p(95)=56.79µs  p(99)=92.7µs   max=2.85ms  
+     http_req_tls_handshaking.......: avg=0s      med=0s      p(90)=0s      p(95)=0s       p(99)=0s       max=0s      
+     http_req_waiting...............: avg=15.38ms med=14.71ms p(90)=21.37ms p(95)=22.74ms  p(99)=29.35ms  max=133.82ms
+     http_reqs......................: 6002    49.978549/s
+     iteration_duration.............: avg=31.85ms med=31.05ms p(90)=38.45ms p(95)=41.38ms  p(99)=53.59ms  max=160.39ms
+     iterations.....................: 3001    24.989275/s
+     reservations_conflict..........: 2       0.016654/s
+     reservations_created...........: 2999    24.972621/s
+     vus............................: 1       min=0            max=1 
+     vus_max........................: 60      min=60           max=60
+

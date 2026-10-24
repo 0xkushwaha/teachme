@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "backend", "exec", "--", "ts-node", "--transpile-only", "backend/src/server.ts"],
+      "env": { "RUN_WORKERS_IN_API": "true", "LOG_LEVEL": "warn", "DOTENV_CONFIG_PATH": "backend/.env" },
+      "port": 4000
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

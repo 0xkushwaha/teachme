@@ -1,0 +1,22 @@
+
+     ✓ 201 or 409
+
+     checks.........................: 100.00% 300 out of 300
+     data_received..................: 375 kB  458 kB/s
+     data_sent......................: 223 kB  273 kB/s
+     http_req_blocked...............: avg=103.16ms med=67.62ms  p(95)=387.38ms p(99)=397.55ms max=404.34ms
+     http_req_connecting............: avg=102.92ms med=67.18ms  p(95)=387.37ms p(99)=397.5ms  max=404.32ms
+     http_req_duration..............: avg=467.81ms med=469.63ms p(95)=536.97ms p(99)=541.93ms max=545.33ms
+       { expected_response:true }...: avg=274.95ms med=274.95ms p(95)=497.79ms p(99)=517.6ms  max=522.55ms
+     http_req_failed................: 99.33%  299 out of 301
+     http_req_receiving.............: avg=57.54µs  med=35.91µs  p(95)=144.45µs p(99)=401.33µs max=767.87µs
+     http_req_sending...............: avg=165.51µs med=46.87µs  p(95)=363.33µs p(99)=812.58µs max=20.91ms 
+     http_req_tls_handshaking.......: avg=0s       med=0s       p(95)=0s       p(99)=0s       max=0s      
+     http_req_waiting...............: avg=467.59ms med=469.47ms p(95)=536.86ms p(99)=541.85ms max=545.13ms
+     http_reqs......................: 301     368.126409/s
+     iteration_duration.............: avg=573.45ms med=548.43ms p(95)=737.68ms p(99)=750.55ms max=757.48ms
+     iterations.....................: 300     366.903397/s
+     reservations_conflict..........: 299     365.680386/s
+   ✓ reservations_created...........: 1       1.223011/s
+   ✓ reservations_error.............: 0       0/s
+

@@ -1,0 +1,23 @@
+/** Single source of truth for the integration-test environment (separate DB + Redis DB). */
+export const TEST_ENV: Record<string, string> = {
+  NODE_ENV: 'test',
+  APP_URL: 'http://localhost:3000',
+  API_URL: 'http://localhost:4000',
+  CORS_ORIGINS: 'http://localhost:3000',
+  LOG_LEVEL: 'silent',
+  DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgresql://teachme:teachme_dev_password@localhost:5432/teachme_test?schema=public&connection_limit=30',
+  REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/1',
+  JWT_ACCESS_SECRET: 'test-access-secret-that-is-long-enough-123456',
+  DATA_ENCRYPTION_KEY: Buffer.alloc(32, 3).toString('base64'),
+  RAZORPAY_KEY_ID: 'rzp_test_fakekey',
+  RAZORPAY_KEY_SECRET: 'test_key_secret',
+  RAZORPAY_WEBHOOK_SECRET: 'test_webhook_secret',
+  GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
+  GOOGLE_CLIENT_SECRET: 'test-google-secret',
+  GOOGLE_REDIRECT_URI: 'http://localhost:4000/api/v1/integrations/google/callback',
+  SMTP_HOST: 'localhost',
+  SMTP_PORT: '1025',
+  OUTBOX_AUTOSTART: 'false',
+  THROTTLE_GLOBAL_LIMIT: '100000',
+  RUN_WORKERS_IN_API: 'false',
+};

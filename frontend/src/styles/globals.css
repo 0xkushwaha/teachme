@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Design tokens. One accent (indigo-violet), restrained neutrals, light + dark. */
+:root {
+  --background: oklch(0.99 0.002 270);
+  --foreground: oklch(0.21 0.02 270);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.975 0.004 270);
+  --muted: oklch(0.955 0.006 270);
+  --muted-foreground: oklch(0.52 0.02 270);
+  --border: oklch(0.92 0.008 270);
+  --border-strong: oklch(0.86 0.012 270);
+  --accent: oklch(0.55 0.21 275);
+  --accent-hover: oklch(0.5 0.21 275);
+  --accent-soft: oklch(0.95 0.035 275);
+  --accent-foreground: oklch(0.99 0 0);
+  --success: oklch(0.6 0.14 155);
+  --success-soft: oklch(0.95 0.04 155);
+  --warning: oklch(0.7 0.15 70);
+  --warning-soft: oklch(0.96 0.05 80);
+  --danger: oklch(0.58 0.2 25);
+  --danger-soft: oklch(0.96 0.03 25);
+  --ring: oklch(0.55 0.21 275 / 0.45);
+  --shadow-color: 270 30% 20%;
+}
+
+:root[data-theme="dark"] {
+  --background: oklch(0.16 0.012 270);
+  --foreground: oklch(0.95 0.006 270);
+  --surface: oklch(0.2 0.014 270);
+  --surface-2: oklch(0.225 0.015 270);
+  --muted: oklch(0.26 0.016 270);
+  --muted-foreground: oklch(0.7 0.016 270);
+  --border: oklch(0.29 0.016 270);
+  --border-strong: oklch(0.36 0.02 270);
+  --accent: oklch(0.68 0.17 278);
+  --accent-hover: oklch(0.73 0.16 278);
+  --accent-soft: oklch(0.3 0.07 278);
+  --accent-foreground: oklch(0.16 0.012 270);
+  --success: oklch(0.72 0.14 155);
+  --success-soft: oklch(0.3 0.05 155);
+  --warning: oklch(0.8 0.14 80);
+  --warning-soft: oklch(0.32 0.05 80);
+  --danger: oklch(0.7 0.17 25);
+  --danger-soft: oklch(0.32 0.06 25);
+  --ring: oklch(0.68 0.17 278 / 0.5);
+  --shadow-color: 270 40% 2%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: oklch(0.16 0.012 270);
+    --foreground: oklch(0.95 0.006 270);
+    --surface: oklch(0.2 0.014 270);
+    --surface-2: oklch(0.225 0.015 270);
+    --muted: oklch(0.26 0.016 270);
+    --muted-foreground: oklch(0.7 0.016 270);
+    --border: oklch(0.29 0.016 270);
+    --border-strong: oklch(0.36 0.02 270);
+    --accent: oklch(0.68 0.17 278);
+    --accent-hover: oklch(0.73 0.16 278);
+    --accent-soft: oklch(0.3 0.07 278);
+    --accent-foreground: oklch(0.16 0.012 270);
+    --success: oklch(0.72 0.14 155);
+    --success-soft: oklch(0.3 0.05 155);
+    --warning: oklch(0.8 0.14 80);
+    --warning-soft: oklch(0.32 0.05 80);
+    --danger: oklch(0.7 0.17 25);
+    --danger-soft: oklch(0.32 0.06 25);
+    --ring: oklch(0.68 0.17 278 / 0.5);
+    --shadow-color: 270 40% 2%;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 4px 16px -4px hsl(var(--shadow-color) / 0.08);
+  --shadow-lift: 0 2px 4px hsl(var(--shadow-color) / 0.06), 0 16px 40px -12px hsl(var(--shadow-color) / 0.18);
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+}
+
+@layer base {
+  * { border-color: var(--border); }
+  html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+}
+
+/* Subtle animated aurora used behind the hero; disabled for reduced motion. */
+.aurora {
+  background:
+    radial-gradient(40% 50% at 20% 20%, oklch(0.75 0.15 280 / 0.22), transparent 70%),
+    radial-gradient(35% 45% at 80% 10%, oklch(0.8 0.12 220 / 0.18), transparent 70%),
+    radial-gradient(45% 50% at 60% 80%, oklch(0.78 0.14 320 / 0.12), transparent 70%);
+  animation: drift 24s ease-in-out infinite alternate;
+}
+.grid-fade {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+/* Entrance animation for <Reveal>. `both` keeps the final state; no JS required. */
+.reveal { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes fade-up {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(0, -2%, 0) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora { animation: none; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

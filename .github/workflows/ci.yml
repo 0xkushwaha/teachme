@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env: { POSTGRES_USER: teachme, POSTGRES_PASSWORD: teachme_dev_password, POSTGRES_DB: teachme }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U teachme" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: backend/package-lock.json }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Migrations apply cleanly and match the schema
+        env: { DATABASE_URL: 'postgresql://teachme:teachme_dev_password@localhost:5432/teachme_ci?schema=public' }
+        run: |
+          PGPASSWORD=teachme_dev_password psql -h localhost -U teachme -d teachme -c 'CREATE DATABASE teachme_shadow;'
+          npx prisma migrate deploy
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url 'postgresql://teachme:teachme_dev_password@localhost:5432/teachme_shadow' --exit-code
+      - run: npm run test:integration
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  e2e:
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env: { POSTGRES_USER: teachme, POSTGRES_PASSWORD: teachme_dev_password, POSTGRES_DB: teachme }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U teachme" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+      mailpit:
+        image: axllent/mailpit:v1.20
+        ports: ['1025:1025', '8025:8025']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci && npx prisma generate
+        working-directory: backend
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: frontend/playwright-report }
+
+  docker:
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t teachme-backend:ci backend
+      - run: docker build -t teachme-frontend:ci frontend
