@@ -1,7 +1,52 @@
+# Dependency update policy
+# - Minor and patch updates arrive as ONE grouped PR per ecosystem/app per week.
+# - Major updates are ignored here: they change APIs (e.g. ESLint 10, NestJS 12, TypeScript 7,
+#   ioredis 6, Node 26 base images) and are done deliberately in a tested PR instead.
+# - Security problems are still caught on every build by `npm audit` in CI.
 version: 2
 updates:
-  - { package-ecosystem: npm, directory: /backend, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
-  - { package-ecosystem: npm, directory: /frontend, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
-  - { package-ecosystem: github-actions, directory: /, schedule: { interval: monthly } }
-  - { package-ecosystem: docker, directory: /backend, schedule: { interval: monthly } }
-  - { package-ecosystem: docker, directory: /frontend, schedule: { interval: monthly } }
+  - package-ecosystem: npm
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups:
+      actions:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule: { interval: monthly }
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule: { interval: monthly }
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]

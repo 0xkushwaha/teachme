@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DateTime } from 'luxon';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { ErrorState, Skeleton } from '@/components/ui/primitives';
 import { errorMessage } from '@/lib/api';
@@ -94,8 +94,9 @@ export function SlotPicker({ teacherId, durationMinutes, timezone, selected, onS
         ) : slots.isLoading ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div key={`${offset}-${day}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          // Keyed fade-in only: the previous day's slots unmount immediately (no exit animation), so a
+          // quick click right after switching days can never select a time on the old day.
+          <motion.div key={`${offset}-${day}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
               {byDay[day].slots.length ? (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {byDay[day].slots.map((s) => {
@@ -121,8 +122,7 @@ export function SlotPicker({ teacherId, durationMinutes, timezone, selected, onS
                   {total ? 'No open times this day — try another day.' : 'No open times this week. Try the next week.'}
                 </p>
               )}
-            </motion.div>
-          </AnimatePresence>
+          </motion.div>
         )}
       </div>
       <p className="mt-3 text-[12px] text-muted-foreground">Times shown in {timezone.replace(/_/g, ' ')} ({DateTime.now().setZone(timezone).toFormat('ZZZZ')}).</p>

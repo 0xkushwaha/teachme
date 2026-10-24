@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { DateTime } from 'luxon';
 import { API, latestEmail, login, stubRazorpayCheckout, uniqueEmail } from './helpers';
 
 /**
@@ -41,11 +42,12 @@ test.describe.serial('student booking journey', () => {
     await page.getByRole('link', { name: /Ishaan Rao/ }).click();
     await expect(page.getByRole('heading', { name: 'Ishaan Rao' })).toBeVisible();
 
-    // Pick the first open slot on the next day that has one.
-    const day = page.getByRole('tab', { name: /open times/ }).filter({ hasNotText: '—' }).nth(1);
-    await day.click();
-    const slot = page.locator('[role="tabpanel"] button').first();
-    await slot.click();
+    // Book 10:00 AM two days out (Asia/Kolkata), so the session is always > 24 h away and step 10
+    // exercises the free-cancellation window regardless of when CI runs.
+    const target = DateTime.now().setZone('Asia/Kolkata').plus({ days: 2 });
+    await page.getByRole('tab', { name: new RegExp(`^${target.toFormat('cccc d LLLL')},`) }).click();
+    await page.getByRole('tabpanel').getByRole('button', { name: '10:00 AM', exact: true }).click();
+    await expect(page.getByText(`${target.toFormat('cccc, d LLLL')} · 10:00 AM · 60 min`)).toBeVisible();
     await expect(page.getByText('₹1,200', { exact: true })).toBeVisible(); // session price from the live quote
     await page.getByRole('button', { name: /Reserve & continue to payment/ }).click();
 

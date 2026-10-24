@@ -27,7 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${sans.variable} ${mono.variable} min-h-dvh font-sans antialiased`}>
+      {/* Browser extensions (e.g. Grammarly) add attributes to <body> before hydration; ignore those. */}
+      <body className={`${sans.variable} ${mono.variable} min-h-dvh font-sans antialiased`} suppressHydrationWarning>
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:shadow-lift">
           Skip to content
         </a>
