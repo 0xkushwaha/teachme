@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # TeachMe backend image — runs the API (default) or the worker (`node dist/worker.js`).
-FROM node:20.18-alpine AS deps
+FROM node:20.20-alpine AS deps
 # Toolchain for native modules (argon2 has no musl/arm64 prebuild); not present in the runtime image.
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
@@ -11,7 +11,7 @@ FROM deps AS build
 COPY . .
 RUN npx prisma generate && npm run build && npm prune --omit=dev
 
-FROM node:20.18-alpine AS runtime
+FROM node:20.20-alpine AS runtime
 RUN apk add --no-cache openssl tini wget
 ENV NODE_ENV=production PORT=4000
 WORKDIR /app
