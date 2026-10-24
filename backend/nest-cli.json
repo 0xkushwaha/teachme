@@ -5,7 +5,14 @@
   "compilerOptions": {
     "tsConfigPath": "tsconfig.build.json",
     "deleteOutDir": true,
-    "assets": [{ "include": "../src/modules/notifications/templates/**/*", "outDir": "dist/src" }],
-    "plugins": [{ "name": "@nestjs/swagger", "options": { "introspectComments": true, "classValidatorShim": true } }]
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "introspectComments": true,
+          "classValidatorShim": true
+        }
+      }
+    ]
   }
 }

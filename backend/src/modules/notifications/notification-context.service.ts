@@ -1,3 +1,4 @@
+import { firstName } from '../../utils/slug';
 import { Injectable } from '@nestjs/common';
 import { AppConfig } from '../../config/app-config';
 import { PrismaService } from '../../database/prisma.service';
@@ -39,7 +40,7 @@ export class NotificationContextService {
       link: bookingPath,
       prefsUrl: `${app}/${isStudent ? 'student' : 'teacher'}/settings`,
       data: {
-        user: { name: user.fullName.split(' ')[0] },
+        user: { name: firstName(user.fullName) },
         session: {
           subject: b.subject.name,
           counterpart,

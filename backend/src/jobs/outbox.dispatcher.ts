@@ -1,3 +1,4 @@
+import { firstName } from '../utils/slug';
 import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { OutboxEvent, Prisma } from '@prisma/client';
 import { AppConfig } from '../config/app-config';
@@ -129,7 +130,7 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
           userId: user.id,
           templateKey: 'verify_email',
           dedupeKey: `verify_email.${sha256(String(p.token)).slice(0, 24)}`,
-          data: { user: { name: user.fullName.split(' ')[0] }, link: `${app}/verify-email?token=${encodeURIComponent(String(p.token))}` },
+          data: { user: { name: firstName(user.fullName) }, link: `${app}/verify-email?token=${encodeURIComponent(String(p.token))}` },
           channels: ['EMAIL'],
         });
         return;
@@ -141,7 +142,7 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
           userId: user.id,
           templateKey: 'password_reset',
           dedupeKey: `password_reset.${sha256(String(p.token)).slice(0, 24)}`,
-          data: { user: { name: user.fullName.split(' ')[0] }, link: `${app}/reset-password?token=${encodeURIComponent(String(p.token))}` },
+          data: { user: { name: firstName(user.fullName) }, link: `${app}/reset-password?token=${encodeURIComponent(String(p.token))}` },
           channels: ['EMAIL'],
         });
         return;
@@ -256,7 +257,7 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
           userId: t.userId,
           templateKey: 'teacher_approval',
           dedupeKey: `approval.${e.id}`,
-          data: { user: { name: t.user.fullName.split(' ')[0] }, approval: { status: status.toLowerCase(), message }, dashboard: { url: `${app}/teacher` } },
+          data: { user: { name: firstName(t.user.fullName) }, approval: { status: status.toLowerCase(), message }, dashboard: { url: `${app}/teacher` } },
           link: '/teacher',
         });
         return;

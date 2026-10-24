@@ -1,3 +1,4 @@
+import { firstName } from '../../utils/slug';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UnrecoverableError } from 'bullmq';
 import { PrismaService } from '../../database/prisma.service';
@@ -210,11 +211,12 @@ export class CalendarSyncService {
     if (e instanceof CalendarProviderError && e.authRevoked) {
       await this.connections.markRevoked(connectionId, 'Google access was revoked or expired');
       await this.prisma.meeting.updateMany({ where: { bookingId, status: { not: 'READY' } }, data: { status: 'FAILED', lastError: 'Teacher must reconnect Google Calendar' } });
+      const teacher = await this.prisma.user.findUnique({ where: { id: teacherUserId }, select: { fullName: true } });
       await this.notifications.notify({
         userId: teacherUserId,
         templateKey: 'calendar_reconnect',
         dedupeKey: `calendar_reconnect.${connectionId}.${new Date().toISOString().slice(0, 10)}`,
-        data: { user: { name: '' }, link: `${this.config.env.APP_URL}/teacher/integrations` },
+        data: { user: { name: firstName(teacher?.fullName ?? '') }, link: `${this.config.env.APP_URL}/teacher/integrations` },
         link: '/teacher/integrations',
       });
       throw new UnrecoverableError('Google authorization revoked');

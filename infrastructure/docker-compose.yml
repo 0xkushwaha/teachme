@@ -42,7 +42,7 @@ services:
       REDIS_URL: redis://redis:6379
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-    command: ["node", "dist/src/server.js"]
+    command: ["node", "dist/server.js"]
     ports: ["4000:4000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -57,7 +57,7 @@ services:
       REDIS_URL: redis://redis:6379
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-    command: ["node", "dist/src/worker.js"]
+    command: ["node", "dist/worker.js"]
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

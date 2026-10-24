@@ -3,7 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { SettingsService } from '../../services/settings.service';
 import { NotificationContextService } from './notification-context.service';
 import { NotificationsService } from './notifications.service';
-import { describeOffset } from './reminder-scheduler.service';
+import { describeRemaining, isSuperseded } from './reminder-scheduler.service';
 
 /** Sends reminders (worker side) and repairs missed ones after outages. */
 @Injectable()
@@ -21,6 +21,9 @@ export class ReminderService {
     if (!booking || booking.status !== 'CONFIRMED') return false;
     if (booking.startAt.toISOString() !== startAtIso) return false;
     if (booking.startAt.getTime() <= Date.now()) return false;
+    const minutesUntilStart = (booking.startAt.getTime() - Date.now()) / 60_000;
+    const { offsetsMinutes } = await this.settings.get('notifications.reminders');
+    if (isSuperseded(offsetMinutes, offsetsMinutes, minutesUntilStart)) return false;
 
     for (const recipient of ['student', 'teacher'] as const) {
       const ctx = await this.context.forBooking(bookingId, recipient);
@@ -28,7 +31,7 @@ export class ReminderService {
         userId: ctx.userId,
         templateKey: 'session_reminder',
         dedupeKey: `reminder.${bookingId}.${offsetMinutes}.${booking.startAt.getTime()}.${ctx.userId}`,
-        data: { ...ctx.data, prefsUrl: ctx.prefsUrl, reminder: { when: describeOffset(offsetMinutes) } },
+        data: { ...ctx.data, prefsUrl: ctx.prefsUrl, reminder: { when: describeRemaining(minutesUntilStart) } },
         link: ctx.link,
       });
     }
@@ -50,10 +53,12 @@ export class ReminderService {
     });
     let sent = 0;
     for (const b of bookings) {
+      const minutesUntilStart = (b.startAt.getTime() - now.getTime()) / 60_000;
       for (const offset of offsetsMinutes) {
         const fireAt = b.startAt.getTime() - offset * 60_000;
         const since = (b.confirmedAt ?? b.updatedAt).getTime();
         if (fireAt > now.getTime() || fireAt < since) continue;
+        if (isSuperseded(offset, offsetsMinutes, minutesUntilStart)) continue;
         const key = `reminder.${b.id}.${offset}.${b.startAt.getTime()}.${b.studentId}.IN_APP`;
         const exists = await this.prisma.notification.findUnique({ where: { dedupeKey: key }, select: { id: true } });
         if (exists) continue;

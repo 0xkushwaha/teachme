@@ -47,3 +47,30 @@ describe('timezone display', () => {
     expect(formatInZone(d, 'Europe/London')).toContain('3:30 AM');
   });
 });
+
+import { firstName } from '../../src/utils/slug';
+
+describe('greeting names', () => {
+  it('skips honorifics', () => {
+    expect(firstName('Dr. Meera Iyer')).toBe('Meera');
+    expect(firstName('Prof Arjun Mehta')).toBe('Arjun');
+    expect(firstName('Lucía Fernández')).toBe('Lucía');
+    expect(firstName('Dr.')).toBe('Dr.');
+  });
+});
+
+import { describeRemaining, isSuperseded } from '../../src/modules/notifications/reminder-scheduler.service';
+
+describe('late reminders', () => {
+  it('drops a 24h reminder once the 1h reminder is due', () => {
+    expect(isSuperseded(1440, [1440, 60], 50)).toBe(true);
+    expect(isSuperseded(1440, [1440, 60], 600)).toBe(false);
+    expect(isSuperseded(60, [1440, 60], 50)).toBe(false);
+  });
+  it('describes the real time remaining', () => {
+    expect(describeRemaining(1440)).toBe('in 24 hours');
+    expect(describeRemaining(60)).toBe('in 1 hour');
+    expect(describeRemaining(52)).toBe('in 52 minutes');
+    expect(describeRemaining(300)).toBe('in 5 hours');
+  });
+});

@@ -1,3 +1,4 @@
+import './config/load-dotenv';
 import { createApp } from './app';
 import { AppConfig } from './config/app-config';
 

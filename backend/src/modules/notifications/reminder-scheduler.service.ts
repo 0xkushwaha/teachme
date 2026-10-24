@@ -30,6 +30,26 @@ export function planReminders(
     .filter((p) => p.fireAt.getTime() > now.getTime());
 }
 
+/**
+ * A reminder is superseded when a smaller configured offset is already due: after an outage we
+ * send only the most relevant reminder instead of a "starts in 24 hours" email an hour before.
+ */
+export function isSuperseded(offsetMinutes: number, offsetsMinutes: number[], minutesUntilStart: number): boolean {
+  return offsetsMinutes.some((o) => o < offsetMinutes && minutesUntilStart <= o);
+}
+
+/** Human wording from the real time remaining (never the nominal offset, which may be stale). */
+export function describeRemaining(minutesUntilStart: number): string {
+  const m = Math.max(1, Math.round(minutesUntilStart));
+  if (m >= 1380) {
+    const days = Math.round(m / 1440);
+    return days <= 1 ? 'in 24 hours' : `in ${days} days`;
+  }
+  if (m >= 90) return `in ${Math.round(m / 60)} hours`;
+  if (m >= 55) return 'in 1 hour';
+  return `in ${m} minutes`;
+}
+
 export function describeOffset(minutes: number): string {
   if (minutes % 1440 === 0) return minutes === 1440 ? 'in 24 hours' : `in ${minutes / 1440} days`;
   if (minutes % 60 === 0) return minutes === 60 ? 'in 1 hour' : `in ${minutes / 60} hours`;

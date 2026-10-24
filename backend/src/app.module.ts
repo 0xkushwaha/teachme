@@ -17,6 +17,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { RequestContextMiddleware } from './middleware/request-context.middleware';
 import { HealthController } from './routes/health.controller';
+import { PublicConfigController } from './routes/public-config.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { StudentsModule } from './modules/students/students.module';
@@ -75,7 +76,7 @@ export class AppModule implements NestModule {
         SupportModule,
         ...(opts.extraImports ?? []),
       ],
-      controllers: [HealthController],
+      controllers: [HealthController, PublicConfigController],
       providers: [
         // Guard order matters: authenticate → CSRF (needs auth mode) → rate limit (keys by user).
         { provide: APP_GUARD, useClass: AuthGuard },

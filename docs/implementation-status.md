@@ -1,6 +1,6 @@
 # Implementation status
 
-_Last updated: 2026-10-24 (session 1)_
+_Last updated: 2026-10-24 (session 2)_
 
 ## Done and verified
 
@@ -25,8 +25,25 @@ _Last updated: 2026-10-24 (session 1)_
 - **Outbox clock skew (real bug):** outbox rows were timestamped by the Node process but eligibility was compared with Postgres `now()`. A few ms of clock jitter made fresh events invisible to an immediate drain (flaky test; in production, multi-server clock skew). `OutboxService.publish` now inserts with database-side `now()`.
 - Integration tests no longer require a wiped DB (Prisma correctly refuses `migrate reset` from an AI agent); setup uses `migrate deploy` on a dedicated `*_test` database and tests use unique fixtures.
 
+## Session 2: frontend (uncommitted at time of writing)
+
+`frontend/` — Next.js 15 (App Router), React 19, Tailwind 4, TanStack Query, React Hook Form + Zod, Radix primitives, Recharts, Luxon. 45 routes; `next build` and ESLint pass.
+
+- **Public:** landing, subjects, subject detail, teacher directory (URL-synced filters), teacher profile with live booking widget, how it works, pricing (live fee config), FAQ, contact/support form, terms, privacy, cancellation policy (live policy values).
+- **Auth:** login, register (student/teacher + explicit consent), verify email, forgot/reset password; safe `next=` redirects.
+- **Student:** overview, find a teacher, sessions (tabs), session detail (Meet, Google Calendar link, .ics, reschedule, cancel with refund estimate, report issue), checkout (hold countdown, Razorpay Checkout, server verification + polling, conflict/refund states), calendar, notifications, settings (profile, timezone, learning profile, preferences, password, export, delete).
+- **Teacher:** overview + setup checklist, calendar (day/week/month), bookings, booking detail (student context, Meet retry), availability (weekly hours, exceptions, rules), profile & subjects (rates in integer paise, admin bounds), Google Calendar connection, notifications, settings (teaching timezone).
+- **Admin:** analytics overview (charts), accounts, teacher approvals, subjects/categories, bookings + admin cancel with refund %, payments/discrepancies/refunds (reconcile, resolve, retry), integration health (providers, queues, outbox, jobs retry, webhooks), notification templates (edit + sandboxed preview), audit log, settings & feature flags, support tickets.
+- Backend additions: `GET /api/v1/platform/config` (public fees/policies/banner).
+
+Verified in a browser against the running stack: landing, login redirect, slot selection, reservation → checkout, honest "Razorpay not configured" error, slot release, teacher dashboard/availability/integrations, admin overview/integrations, 375px layout (no horizontal scroll).
+
+Bugs found and fixed in session 2: honorific greetings ("Welcome, Dr."); empty name in calendar-reconnect email; backend never loaded `.env` explicitly; `npm start`/compose pointed at `dist/src/*.js` (build emits `dist/*.js`); late reminders could send a "starts in 24 hours" email an hour before a session (now superseded by the nearer reminder and worded from real time remaining); day tabs lacked accessible names; reveal animations depended on IntersectionObserver/JS (now CSS-only); tab bars clipped on phones.
+
+Tests after session 2: backend unit **68/68**, integration **47/47** (3 consecutive runs).
+
 ## Not started yet (next sessions)
-1. **Frontend** (`frontend/`, Next.js 15 + Tailwind + TanStack Query + RHF/Zod): all public, auth, student, teacher, admin pages; Razorpay Checkout integration.
+1. Per-page `<title>` metadata for client dashboard pages (currently the site default).
 2. **E2E** (Playwright) including stubbed Checkout via a test-only backend entry point.
 3. **Load tests** (k6) and documented results.
 4. Dockerfiles, CI workflow, nginx/ingress config, monitoring config.
