@@ -1,7 +1,8 @@
 import 'server-only';
+import { backendInternalUrl } from './backend-url';
 
 /** Server-side fetch for public, non-personalised data (SSR/ISR). Never forwards user cookies. */
-const BASE = process.env.BACKEND_INTERNAL_URL ?? 'http://localhost:4000';
+const BASE = backendInternalUrl();
 
 export async function serverGet<T>(path: string, revalidate = 60): Promise<T | null> {
   try {

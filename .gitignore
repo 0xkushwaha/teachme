@@ -25,3 +25,7 @@ loadtest-results/*.json
 loadtest-results/tokens.json
 loadtest-results/*.log
 loadtest-results/resources.csv
+# Any real env file, whatever its name (e.g. infrastructure/deployment/backend.env)
+*.env
+!*.env.example
+infrastructure/deployment/certs/
