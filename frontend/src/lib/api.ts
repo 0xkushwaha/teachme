@@ -64,9 +64,11 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   const url = new URL(`${API_BASE}${path}`, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
   for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
 
+  // FormData (file uploads) is sent as multipart; the browser sets the boundary header itself.
+  const isForm = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const send = async () => {
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+    if (opts.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
     if (method !== 'GET') {
       await ensureCsrf();
       headers['x-csrf-token'] = decodeURIComponent(readCookie('tm_csrf') ?? '');
@@ -76,7 +78,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
       method,
       credentials: 'include',
       headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      body: isForm ? (opts.body as FormData) : opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
       signal: opts.signal,
     });
   };

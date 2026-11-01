@@ -30,6 +30,14 @@ PostgreSQL 16, managed through Prisma (`backend/prisma/schema.prisma`) with vers
 | `AuditLog` | Security and admin actions |
 | `PlatformSetting` | Validated JSON settings and feature flags (defaults in code) |
 | `SupportTicket` | Contact form and booking issue reports |
+| `TeacherInvitation` | Admin invitation: email, **SHA-256 of the token** (never the token), status `PENDING/ACCEPTED/REVOKED/EXPIRED`, expiry, send count, delivery result, accepting user |
+| `StoredFile` | Uploaded bytes (`bytea`) with sniffed MIME type, size, SHA-256, owner, kind (`TEACHER_DOCUMENT`/`AVATAR`). Kept in Postgres so any API replica can serve them without shared disk; never selected in list queries |
+| `TeacherDocument` | Qualification evidence for review: type, title, review status/note/reviewer |
+| `TeacherEarning` | **Append-only earnings ledger.** `SESSION` rows written in the same transaction that completes a booking; `ADJUSTMENT` rows by admins. `payoutId` links an entry to the payout that paid it |
+| `TeacherPayout` | Manual payout record `REQUESTED → APPROVED → PAID` (or `REJECTED`/`CANCELLED`, which release the entries), bank reference, decision metadata |
+| `Announcement` | Plain-text notice for `ALL`/`STUDENT`/`TEACHER` dashboards with a start/end window |
+
+`TeacherProfile` gained `applicationSubmittedAt` (required before first approval) and `rejectionReason` (shown to the teacher).
 
 ## Constraints that protect correctness
 | Constraint | Why |
@@ -41,6 +49,15 @@ PostgreSQL 16, managed through Prisma (`backend/prisma/schema.prisma`) with vers
 | `payment_amount_positive`, `payment_refund_bounded`, `refund_amount_positive` | Refunds can never exceed the captured amount. |
 | `user_email_lowercase` | One account per email regardless of case. |
 | Unique: `Payment.providerOrderId`, `Payment.providerPaymentId`, `Refund.providerRefundId`, `WebhookEvent(provider,eventId)`, `CalendarEvent.providerEventId`, `Meeting.conferenceRequestId`, `Notification.dedupeKey`, `IdempotencyKey(userId,key)`, `Session.tokenHash` | Provider transactions and side effects are recorded exactly once. |
+
+| `teacher_invitation_one_pending_per_email` — unique `lower(email)` where `PENDING` | No duplicate live invitations, even from two admins at once |
+| `teacher_earning_one_session_per_booking` — unique `bookingId` where `SESSION`; `teacher_earning_session_shape`, `teacher_earning_nonzero` | A completed session can be credited **once**, with a positive amount |
+| Trigger `teacher_earning_immutable` | Ledger rows cannot be deleted; amount, teacher, booking, type, currency and date cannot change (only the payout allocation can). Corrections are new `ADJUSTMENT` rows |
+| `teacher_payout_one_open_per_teacher` — unique `teacherId` where `REQUESTED`/`APPROVED`; `teacher_payout_positive`; `teacher_payout_paid_reference` | No duplicate payout requests; a `PAID` payout always records a bank reference and time |
+| `stored_file_size` | 1 B – 10 MB and `sizeBytes` equals the stored byte length |
+| `announcement_window` | End after start |
+
+Earnings rule (`utils/money.ts#teacherEarningMinor`, mirrored by the migration backfill): a teacher earns the session price (`priceMinor`, before platform fee and tax) for a completed, paid session, reduced pro rata if part of the payment was refunded, rounded down. Unpaid sessions earn nothing.
 
 Stale `PENDING_PAYMENT` holds are expired **inside the reserving transaction** (and every minute by the worker), so an expired hold never blocks a slot even if the worker is down.
 
@@ -60,6 +77,10 @@ Stale `PENDING_PAYMENT` holds are expired **inside the reserving transaction** (
 | `JobRecord(status, updatedAt)` | Failed-job dashboard |
 | `AuditLog(entityType, entityId)`, `(actorId, createdAt)`, `(action, createdAt)`, `(createdAt)` | Audit filters |
 | `Session(userId)`, `(familyId)`, `(expiresAt)` | Revocation and cleanup |
+| `TeacherEarning(teacherId, earnedAt)`, `(teacherId, payoutId)`, `(payoutId)` | Earnings summaries/series, available-balance and payout allocation |
+| `TeacherPayout(status, requestedAt)`, `(teacherId, requestedAt)` | Admin payout queue, teacher history |
+| `TeacherProfile(approvalStatus, applicationSubmittedAt)` | Admin review queue (submitted vs. still applying) |
+| `TeacherInvitation(status, createdAt)`, `(email)`; `StoredFile(ownerId, kind)`; `TeacherDocument(teacherId, createdAt)`; `Announcement(archivedAt, startsAt)` | Admin lists, erasure, document lists, active announcements |
 
 ## Retention and deletion
 Implemented by the daily `maintenance.retention` job and the account-deletion flow:

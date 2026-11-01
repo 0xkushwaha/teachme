@@ -39,6 +39,17 @@ export const settingSchemas = {
     teacherSelfPricing: z.boolean(),
     maintenanceBanner: z.string().max(280).nullable(),
   }),
+  'onboarding.rules': z.object({
+    invitationTtlHours: z.number().int().min(1).max(720),
+    requireDocuments: z.boolean(),
+    maxDocuments: z.number().int().min(1).max(20),
+  }),
+  'payouts.rules': z.object({
+    enabled: z.boolean(),
+    minPayoutMinor: z.number().int().min(100),
+    /** Days after a session completes before its earning can be paid out (dispute window). */
+    clearingDays: z.number().int().min(0).max(60),
+  }),
 } as const;
 
 export type SettingKey = keyof typeof settingSchemas;
@@ -59,12 +70,15 @@ export const settingDefaults: { [K in SettingKey]: SettingValue<K> } = {
   'notifications.reminders': { offsetsMinutes: [1440, 60], adminAlertEmail: null },
   'features.flags': {
     studentRegistration: true,
-    teacherRegistration: true,
+    // Teacher accounts are created through admin invitations by default; admins can reopen open applications.
+    teacherRegistration: false,
     googleCalendarSync: true,
     meetCreation: true,
     teacherSelfPricing: true,
     maintenanceBanner: null,
   },
+  'onboarding.rules': { invitationTtlHours: 168, requireDocuments: true, maxDocuments: 10 },
+  'payouts.rules': { enabled: true, minPayoutMinor: 500_00, clearingDays: 3 },
 };
 
 export const settingDescriptions: Record<SettingKey, string> = {
@@ -73,5 +87,7 @@ export const settingDescriptions: Record<SettingKey, string> = {
   'policy.cancellation': 'Refund windows for student cancellations',
   'policy.reschedule': 'Reschedule notice and limits',
   'notifications.reminders': 'Reminder offsets before a session and the admin alert inbox',
-  'features.flags': 'Feature flags and maintenance banner',
+  'features.flags': 'Feature flags and maintenance banner (teacherRegistration = open applications without an invitation)',
+  'onboarding.rules': 'Teacher invitation lifetime and application document requirements',
+  'payouts.rules': 'Manual teacher payouts: minimum amount and clearing period after a session',
 };

@@ -197,7 +197,8 @@ export class TeachersService {
       this.prisma.booking.count({ where: { teacherId, status: 'CONFIRMED', startAt: { gte: now } } }),
       this.prisma.booking.count({ where: { teacherId, status: 'CONFIRMED', startAt: { gte: now, lt: weekAhead } } }),
       this.prisma.booking.count({ where: { teacherId, status: 'COMPLETED', startAt: { gte: monthAgo } } }),
-      this.prisma.booking.aggregate({ where: { teacherId, status: { in: ['COMPLETED', 'CONFIRMED'] }, startAt: { gte: monthAgo, lt: now } }, _sum: { priceMinor: true } }),
+      // Earned money comes from the ledger (completed, paid sessions net of refunds), not from bookings.
+      this.prisma.teacherEarning.aggregate({ where: { teacherId, earnedAt: { gte: monthAgo } }, _sum: { amountMinor: true } }),
       this.prisma.booking.findMany({
         where: { teacherId, status: 'CONFIRMED', endAt: { gte: now } },
         orderBy: { startAt: 'asc' },
@@ -216,7 +217,7 @@ export class TeachersService {
         availability: profile._count.availability > 0,
         calendar: connection?.status === 'ACTIVE',
       },
-      stats: { upcoming, thisWeek, completedLast30Days: completed30, earningsLast30DaysMinor: earnings30._sum.priceMinor ?? 0, pendingRefunds },
+      stats: { upcoming, thisWeek, completedLast30Days: completed30, earningsLast30DaysMinor: earnings30._sum.amountMinor ?? 0, pendingRefunds },
       calendar: connection ?? null,
       nextSessions: next.map((b) => ({ id: b.id, startAt: b.startAt, endAt: b.endAt, subject: b.subject.name, student: b.student.fullName, meetingStatus: b.meeting?.status ?? null })),
     };

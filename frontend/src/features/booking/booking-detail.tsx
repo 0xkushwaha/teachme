@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CalendarClock, CalendarPlus, Download, LifeBuoy, Loader2, RefreshCw, Video, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, CalendarPlus, Download, LifeBuoy, Loader2, RefreshCw, Video, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { Alert, Avatar, Card, CardHeader, ErrorState, Skeleton, StatusBadge } fr
 import { useAuth } from '@/hooks/use-auth';
 import { errorMessage, newIdempotencyKey } from '@/lib/api';
 import { bookingService, meetingService } from '@/services/bookings';
+import { teacherService } from '@/services/teacher';
 import type { Booking, Slot } from '@/types/api';
 import { formatDateTime, formatMoney, formatRange, relative, STATUS_LABEL } from '@/utils/format';
 import { PolicyText, PriceSummary } from './price-summary';
@@ -92,6 +93,7 @@ export function BookingDetail({ id, viewer }: { id: string; viewer: Viewer }) {
             <Button asChild variant="ghost"><Link href={`/contact?category=BOOKING_ISSUE&bookingId=${b.id}`}><LifeBuoy />Report an issue</Link></Button>
           </div>
         )}
+        {viewer === 'teacher' && b.status === 'CONFIRMED' && new Date(b.endAt).getTime() <= Date.now() && <CompletePanel b={b} />}
         {!upcoming && (
           <Button asChild variant="ghost"><Link href={`/contact?category=BOOKING_ISSUE&bookingId=${b.id}`}><LifeBuoy />Report an issue with this booking</Link></Button>
         )}
@@ -141,6 +143,34 @@ export function BookingDetail({ id, viewer }: { id: string; viewer: Viewer }) {
       <CancelDialog open={cancelOpen} onOpenChange={setCancelOpen} b={b} viewer={viewer} />
       {rescheduleOpen && <RescheduleDialog open={rescheduleOpen} onOpenChange={setRescheduleOpen} b={b} />}
     </div>
+  );
+}
+
+/** Teachers confirm a session took place; otherwise it completes automatically shortly after it ends. */
+function CompletePanel({ b }: { b: Booking }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const complete = useMutation({
+    mutationFn: () => teacherService.completeBooking(b.id),
+    onSuccess: () => {
+      toast.success('Session marked completed. The earning is in your ledger.');
+      setOpen(false);
+      qc.invalidateQueries({ queryKey: ['booking', b.id] });
+      qc.invalidateQueries({ queryKey: ['teacher'] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  return (
+    <Alert tone="info" title="Did this session take place?" action={<Button size="sm" onClick={() => setOpen(true)}><CheckCircle2 />Mark completed</Button>}>
+      Confirming adds the earning to your ledger now. Sessions are also completed automatically shortly after they end. If the student didn’t attend, report an issue instead.
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Mark this session completed?"
+        description="This can’t be undone. The student can still report an issue to support."
+        footer={<><Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button loading={complete.isPending} onClick={() => complete.mutate()}>Mark completed</Button></>}
+      />
+    </Alert>
   );
 }
 

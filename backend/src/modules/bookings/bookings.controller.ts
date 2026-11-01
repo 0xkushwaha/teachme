@@ -65,6 +65,14 @@ export class BookingsController {
     return this.bookings.reschedule(user, id, dto.startAt);
   }
 
+  @Roles('TEACHER')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post(':id/complete')
+  complete(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.bookings.complete(user, id);
+  }
+
   /** iCalendar file so students can add the session to any calendar without granting OAuth access. */
   @Get(':id/ics')
   @Header('Content-Type', 'text/calendar; charset=utf-8')

@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser, Roles } from '../../common/decorators';
 import type { AuthUser } from '../../common/auth-user';
+import { paginate, PaginationQuery } from '../../common/dto/pagination.dto';
+import { AppError } from '../../common/errors';
 import { PrismaService } from '../../database/prisma.service';
 
 class UpdateStudentProfileDto {
@@ -25,6 +28,65 @@ export class StudentsController {
   @Patch()
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateStudentProfileDto) {
     return this.prisma.studentProfile.upsert({ where: { userId: user.id }, create: { userId: user.id, ...dto }, update: dto });
+  }
+
+  /** Payment history: only payments that moved money (captured, refunded, or failed attempts). */
+  @Get('payments')
+  async payments(@CurrentUser() user: AuthUser, @Query() q: PaginationQuery) {
+    const where: Prisma.PaymentWhereInput = { booking: { studentId: user.id }, status: { in: ['CAPTURED', 'PARTIALLY_REFUNDED', 'REFUNDED', 'FAILED'] } };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.payment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: q.skip,
+        take: q.pageSize,
+        select: {
+          id: true, amountMinor: true, currency: true, status: true, method: true, capturedAt: true, refundedMinor: true, createdAt: true, failureReason: true,
+          booking: { select: { id: true, startAt: true, durationMinutes: true, status: true, subject: { select: { name: true } }, teacher: { select: { user: { select: { fullName: true } } } } } },
+          refunds: { select: { amountMinor: true, status: true, processedAt: true, createdAt: true } },
+        },
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+    return paginate(
+      rows.map((p) => ({ ...p, booking: { ...p.booking, subject: p.booking.subject.name, teacher: p.booking.teacher.user.fullName } })),
+      total,
+      q,
+    );
+  }
+
+  /** Receipt for a captured payment. Students see only their own (404 otherwise). */
+  @Get('payments/:id/receipt')
+  async receipt(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    const p = await this.prisma.payment.findFirst({
+      where: { id, booking: { studentId: user.id }, status: { in: ['CAPTURED', 'PARTIALLY_REFUNDED', 'REFUNDED'] } },
+      include: {
+        booking: { include: { subject: { select: { name: true } }, teacher: { select: { user: { select: { fullName: true } } } }, student: { select: { fullName: true, email: true } } } },
+        refunds: { where: { status: 'PROCESSED' }, select: { amountMinor: true, processedAt: true } },
+      },
+    });
+    if (!p) throw AppError.notFound('Receipt');
+    const b = p.booking;
+    return {
+      receiptNumber: `TM-${(p.capturedAt ?? p.createdAt).toISOString().slice(0, 10).replace(/-/g, '')}-${p.id.slice(0, 8).toUpperCase()}`,
+      issuedAt: p.capturedAt ?? p.createdAt,
+      provider: p.provider,
+      providerPaymentId: p.providerPaymentId,
+      method: p.method,
+      currency: p.currency,
+      billedTo: { name: b.student.fullName, email: b.student.email },
+      session: { bookingId: b.id, subject: b.subject.name, teacher: b.teacher.user.fullName, startAt: b.startAt, durationMinutes: b.durationMinutes, timezone: b.studentTimezone, status: b.status },
+      lines: [
+        { label: `${b.subject.name} session (${b.durationMinutes} min)`, amountMinor: b.priceMinor },
+        { label: 'Platform fee', amountMinor: b.platformFeeMinor },
+        { label: 'Tax', amountMinor: b.taxMinor },
+      ],
+      totalMinor: b.totalMinor,
+      paidMinor: p.amountMinor,
+      refunds: p.refunds,
+      refundedMinor: p.refundedMinor,
+      netPaidMinor: p.amountMinor - p.refundedMinor,
+    };
   }
 
   @Get('overview')

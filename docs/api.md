@@ -112,13 +112,33 @@ curl -X POST localhost:4000/api/v1/bookings -H "Authorization: Bearer $TOKEN" \
 | DELETE | `/integrations/google/connection` | teacher |
 
 ### Teacher self-service
-`GET/PATCH /teachers/me`, `PUT /teachers/me/subjects`, `GET /teachers/me/overview`, `GET /availability/me`, `PUT /availability/me/weekly`, `POST/DELETE /availability/me/exceptions[/:id]`, `PATCH /availability/me/settings`.
+`GET/PATCH /teachers/me`, `PUT /teachers/me/subjects`, `GET /teachers/me/overview`, `GET /availability/me`, `PUT /availability/me/weekly`, `POST/DELETE /availability/me/exceptions[/:id]`, `PATCH /availability/me/settings`, `POST /bookings/:id/complete` (own confirmed booking, only after it has ended; records the earning).
+
+`PATCH /teachers/me` no longer accepts `avatarUrl` (external image URLs were removed); photos are uploaded instead.
+
+### Teacher onboarding (session 4)
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/auth/invitations/inspect` `{ token }` | public (20/min/IP) | `{ email, expiresAt }` for a live invitation, else `400 TOKEN_INVALID` |
+| POST | `/auth/invitations/accept` `{ token, fullName, password, timezone?, acceptTerms }` | public (10/min/IP) | Creates a verified `TEACHER` account (profile `PENDING`), claims the invitation once, sets auth cookies |
+| GET | `/teachers/me/application` | teacher | Checklist, status, rejection reason, `canSubmit` |
+| POST | `/teachers/me/application/submit` | teacher | `422` with `details.missing` until profile, subjects, availability, verified email and (if required) documents are complete |
+| GET/POST | `/teachers/me/documents` | teacher | Multipart `file` + `type` (`DEGREE`/`CERTIFICATE`/`EXPERIENCE`/`ID_PROOF`/`OTHER`) + `title`; PDF/PNG/JPEG/WebP by content, ≤ 5 MB, ≤ `maxDocuments` |
+| GET | `/teachers/me/documents/:id/file` | teacher (own) | Always `Content-Disposition: attachment`, `nosniff`, sandbox CSP |
+| DELETE | `/teachers/me/documents/:id` | teacher (own) | Not while under review; verified documents on approved profiles are support-only |
+| POST/DELETE | `/teachers/me/avatar` | teacher | PNG/JPEG/WebP ≤ 2 MB → `{ avatarUrl: "/api/v1/files/avatars/:id" }`; previous photo deleted |
+| GET | `/files/avatars/:id` | public | Only `AVATAR` files; immutable cache |
+
+### Earnings & payouts (teacher)
+`GET /teachers/me/earnings` (lifetime, available, clearing, in payout, paid out, pending from upcoming sessions, this/last month, session counts, payout eligibility), `GET /teachers/me/earnings/series` (12 weeks + 12 months, teacher timezone), `GET /teachers/me/earnings/ledger?page=`, `GET /teachers/me/payouts?page=`, `POST /teachers/me/payouts { note? }` (whole available balance; one open request at a time → `409`), `POST /teachers/me/payouts/:id/cancel` (only `REQUESTED`).
 
 ### Account, notifications, support
-`PATCH /users/me`, `GET /users/me/export`, `POST /users/me/delete { password, confirm: "DELETE" }`, `GET/PATCH /students/me`, `GET /students/me/overview`, `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/:id/read`, `POST /notifications/read-all`, `GET/PUT /notifications/preferences`, `POST /support/tickets`, `GET /support/tickets/mine`.
+`PATCH /users/me`, `GET /users/me/export`, `POST /users/me/delete { password, confirm: "DELETE" }`, `GET/PATCH /students/me`, `GET /students/me/overview`, `GET /students/me/payments?page=`, `GET /students/me/payments/:id/receipt` (own captured payments only), `GET /announcements` (active, filtered by the caller's role), `GET /notifications`, `GET /notifications/unread-count`, `POST /notifications/:id/read`, `POST /notifications/read-all`, `GET/PUT /notifications/preferences`, `POST /support/tickets`, `GET /support/tickets/mine`.
 
 ### Admin `/admin` (ADMIN only, audited)
 `GET overview?days=`, `GET users`, `PATCH users/:id/status`, `PATCH users/:id/role`, `GET teachers`, `POST teachers/:id/approval`, `GET|POST subjects`, `PATCH subjects/:id`, `GET|POST categories`, `PATCH categories/:id`, `GET bookings`, `GET bookings/:id`, `POST bookings/:id/cancel { reason, refundPercent }`, `GET payments?discrepancy=true`, `POST payments/:id/reconcile`, `POST payments/:id/resolve`, `GET refunds`, `POST refunds/:id/retry`, `GET integrations/health`, `GET jobs`, `POST jobs/:id/retry`, `GET webhooks`, `GET notification-templates`, `PUT|DELETE notification-templates/:key`, `GET notification-templates/:key/preview`, `GET audit-logs`, `GET settings`, `PUT settings/:key { value }`, `GET support-tickets`, `PATCH support-tickets/:id`.
+
+Added in session 4: `GET users/:id` (profile, booking counts, sessions, recent audit activity), `POST users/:id/remove { confirmEmail, reason }` (erasure; email must be re-typed; not for admins or self; refused with upcoming sessions or an open payout), `GET teachers?stage=submitted|draft`, `GET teachers/:id` (detail with documents, stats, recent bookings), `GET teachers/:id/documents/:docId/file` (audited), `POST teachers/:id/documents/:docId/review { status: VERIFIED|REJECTED, note? }`, `POST teachers/:id/approval` now requires a submitted application for first approval and a `note` (≥ 5 chars, sent to the teacher) for `REJECTED`, `GET bookings?q=` (student/teacher name or email, subject, booking id), `GET|POST invitations`, `POST invitations/:id/resend|revoke`, `GET payouts?status=&teacherId=`, `POST payouts/:id/approve { note? }`, `POST payouts/:id/paid { reference, note? }`, `POST payouts/:id/reject { reason }`, `GET teachers/:id/earnings`, `POST teachers/:id/earnings/adjustments { amountMinor, description }`, `GET finance/summary?from=&to=` (≤ 400 days), `GET finance/report.csv?from=&to=`, `GET|POST announcements`, `PATCH announcements/:id`, `POST announcements/:id/archive`.
 
 ### Operations
 `GET /api/v1/health/live`, `GET /api/v1/health/ready` (DB + Redis), `GET /metrics` (Prometheus; `Authorization: Bearer $METRICS_TOKEN`).

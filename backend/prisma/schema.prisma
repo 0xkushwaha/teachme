@@ -133,6 +133,51 @@ enum IdempotencyStatus {
   COMPLETED
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum FileKind {
+  TEACHER_DOCUMENT
+  AVATAR
+}
+
+enum DocumentType {
+  DEGREE
+  CERTIFICATE
+  ID_PROOF
+  EXPERIENCE
+  OTHER
+}
+
+enum DocumentReviewStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum EarningType {
+  SESSION
+  ADJUSTMENT
+}
+
+enum PayoutStatus {
+  REQUESTED
+  APPROVED
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+enum AnnouncementAudience {
+  ALL
+  STUDENT
+  TEACHER
+}
+
 enum SupportTicketStatus {
   OPEN
   IN_PROGRESS
@@ -168,6 +213,7 @@ model User {
   notificationPreferences NotificationPreference[]
   auditLogs               AuditLog[]
   supportTickets          SupportTicket[]
+  storedFiles             StoredFile[]
 
   @@index([role, status, createdAt])
 }
@@ -218,33 +264,41 @@ model StudentProfile {
 }
 
 model TeacherProfile {
-  id               String                @id @default(uuid()) @db.Uuid
-  userId           String                @unique @db.Uuid
-  slug             String                @unique
-  headline         String
-  bio              String
-  qualifications   Json                  @default("[]")
-  yearsExperience  Int                   @default(0)
-  languages        String[]
-  timezone         String                @default("Asia/Kolkata")
-  approvalStatus   TeacherApprovalStatus @default(PENDING)
-  sessionDurations Int[]                 @default([60])
-  bufferMinutes    Int                   @default(10)
-  minNoticeMinutes Int                   @default(720)
-  maxAdvanceDays   Int                   @default(60)
-  avatarUrl        String?
-  approvedAt       DateTime?             @db.Timestamptz(3)
-  approvedById     String?               @db.Uuid
-  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime              @updatedAt @db.Timestamptz(3)
+  id                     String                @id @default(uuid()) @db.Uuid
+  userId                 String                @unique @db.Uuid
+  slug                   String                @unique
+  headline               String
+  bio                    String
+  qualifications         Json                  @default("[]")
+  yearsExperience        Int                   @default(0)
+  languages              String[]
+  timezone               String                @default("Asia/Kolkata")
+  approvalStatus         TeacherApprovalStatus @default(PENDING)
+  sessionDurations       Int[]                 @default([60])
+  bufferMinutes          Int                   @default(10)
+  minNoticeMinutes       Int                   @default(720)
+  maxAdvanceDays         Int                   @default(60)
+  avatarUrl              String?
+  approvedAt             DateTime?             @db.Timestamptz(3)
+  approvedById           String?               @db.Uuid
+  /// Set when the teacher submits their application for review; required before first approval.
+  applicationSubmittedAt DateTime?             @db.Timestamptz(3)
+  /// Reason shown to the teacher when an application is rejected.
+  rejectionReason        String?
+  createdAt              DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime              @updatedAt @db.Timestamptz(3)
 
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   subjects               TeacherSubject[]
   availability           TeacherAvailability[]
   availabilityExceptions AvailabilityException[]
   bookings               Booking[]
+  documents              TeacherDocument[]
+  earnings               TeacherEarning[]
+  payouts                TeacherPayout[]
 
   @@index([approvalStatus])
+  @@index([approvalStatus, applicationSubmittedAt])
 }
 
 model SubjectCategory {
@@ -358,6 +412,7 @@ model Booking {
   refunds       Refund[]
   calendarEvent CalendarEvent?
   meeting       Meeting?
+  earnings      TeacherEarning[]
 
   @@index([teacherId, startAt])
   @@index([studentId, startAt])
@@ -647,4 +702,131 @@ model SupportTicket {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+}
+
+/// Admin-issued invitation to create a TEACHER account. Only the SHA-256 of the token is stored.
+/// At most one PENDING invitation per email (partial unique index in the migration).
+model TeacherInvitation {
+  id                String           @id @default(uuid()) @db.Uuid
+  email             String
+  tokenHash         String           @unique
+  status            InvitationStatus @default(PENDING)
+  expiresAt         DateTime         @db.Timestamptz(3)
+  note              String?
+  invitedById       String?          @db.Uuid
+  sendCount         Int              @default(1)
+  lastSentAt        DateTime         @default(now()) @db.Timestamptz(3)
+  lastDeliveryError String?
+  deliveredAt       DateTime?        @db.Timestamptz(3)
+  acceptedAt        DateTime?        @db.Timestamptz(3)
+  acceptedUserId    String?          @unique @db.Uuid
+  revokedAt         DateTime?        @db.Timestamptz(3)
+  revokedById       String?          @db.Uuid
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+/// Uploaded file bytes. Kept in PostgreSQL so every API replica can serve them without shared disk.
+/// Never select `data` in list queries.
+model StoredFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @db.Uuid
+  kind      FileKind
+  fileName  String
+  mimeType  String
+  sizeBytes Int
+  sha256    String
+  data      Bytes
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  owner    User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  document TeacherDocument?
+
+  @@index([ownerId, kind])
+}
+
+/// Qualification evidence a teacher uploads for admin review.
+model TeacherDocument {
+  id           String               @id @default(uuid()) @db.Uuid
+  teacherId    String               @db.Uuid
+  fileId       String               @unique @db.Uuid
+  type         DocumentType
+  title        String
+  reviewStatus DocumentReviewStatus @default(PENDING)
+  reviewNote   String?
+  reviewedAt   DateTime?            @db.Timestamptz(3)
+  reviewedById String?              @db.Uuid
+  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, createdAt])
+}
+
+/// Append-only earnings ledger (a database trigger rejects edits to amounts and deletes).
+/// SESSION rows are written in the same transaction that marks a booking COMPLETED.
+model TeacherEarning {
+  id          String      @id @default(uuid()) @db.Uuid
+  teacherId   String      @db.Uuid
+  bookingId   String?     @db.Uuid
+  type        EarningType @default(SESSION)
+  amountMinor Int
+  currency    String      @default("INR") @db.Char(3)
+  description String
+  payoutId    String?     @db.Uuid
+  earnedAt    DateTime    @db.Timestamptz(3)
+  createdById String?     @db.Uuid
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id])
+  booking Booking?       @relation(fields: [bookingId], references: [id])
+  payout  TeacherPayout? @relation(fields: [payoutId], references: [id])
+
+  @@index([teacherId, earnedAt])
+  @@index([teacherId, payoutId])
+  @@index([payoutId])
+}
+
+/// Manual payout record: teacher requests, admin approves and marks paid with a bank reference.
+/// The platform does not move money itself. One open (REQUESTED/APPROVED) payout per teacher.
+model TeacherPayout {
+  id              String       @id @default(uuid()) @db.Uuid
+  teacherId       String       @db.Uuid
+  amountMinor     Int
+  currency        String       @default("INR") @db.Char(3)
+  status          PayoutStatus @default(REQUESTED)
+  requestedAt     DateTime     @default(now()) @db.Timestamptz(3)
+  decidedAt       DateTime?    @db.Timestamptz(3)
+  decidedById     String?      @db.Uuid
+  paidAt          DateTime?    @db.Timestamptz(3)
+  reference       String?
+  note            String?
+  rejectionReason String?
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  teacher  TeacherProfile   @relation(fields: [teacherId], references: [id])
+  earnings TeacherEarning[]
+
+  @@index([status, requestedAt])
+  @@index([teacherId, requestedAt])
+}
+
+model Announcement {
+  id          String               @id @default(uuid()) @db.Uuid
+  title       String
+  body        String
+  audience    AnnouncementAudience @default(ALL)
+  startsAt    DateTime             @default(now()) @db.Timestamptz(3)
+  endsAt      DateTime?            @db.Timestamptz(3)
+  archivedAt  DateTime?            @db.Timestamptz(3)
+  createdById String?              @db.Uuid
+  createdAt   DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime             @updatedAt @db.Timestamptz(3)
+
+  @@index([archivedAt, startsAt])
 }

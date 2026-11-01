@@ -1,13 +1,13 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Camera, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select, Textarea } from '@/components/ui/form';
-import { Alert, Card, CardHeader, ErrorState, PageHeader, Skeleton } from '@/components/ui/primitives';
+import { Alert, Avatar, Card, CardHeader, ErrorState, PageHeader, Skeleton } from '@/components/ui/primitives';
 import { useAuth } from '@/hooks/use-auth';
 import { errorMessage } from '@/lib/api';
 import { catalogService } from '@/services/catalog';
@@ -26,7 +26,7 @@ function ProfileEditor() {
         description="This is what students see on your public profile."
         actions={q.data.approvalStatus === 'APPROVED' && <Button asChild variant="secondary"><Link href={`/teachers/${q.data.slug}`} target="_blank"><ExternalLink />View public profile</Link></Button>}
       />
-      {params.get('welcome') && <Alert tone="info" title="Welcome to TeachMe!" className="mb-6">Complete your profile, add at least one subject and set your weekly hours. We’ll review your profile and email you once it’s approved.</Alert>}
+      {params.get('welcome') && <Alert tone="info" title="Welcome to TeachMe!" className="mb-6">Complete your profile, add at least one subject and set your weekly hours, then submit your application from the <Link href="/teacher/application" className="underline underline-offset-4">Application</Link> page.</Alert>}
       <div className="space-y-6">
         <About me={q.data} />
         <Subjects me={q.data} />
@@ -38,7 +38,7 @@ function ProfileEditor() {
 function About({ me }: { me: TeacherSelf }) {
   const qc = useQueryClient();
   const { refresh } = useAuth();
-  const [f, setF] = useState({ headline: me.headline, bio: me.bio, yearsExperience: me.yearsExperience, languages: me.languages.join(', '), avatarUrl: me.avatarUrl ?? '' });
+  const [f, setF] = useState({ headline: me.headline, bio: me.bio, yearsExperience: me.yearsExperience, languages: me.languages.join(', ') });
   const [quals, setQuals] = useState(me.qualifications);
   const save = useMutation({
     mutationFn: () =>
@@ -48,7 +48,6 @@ function About({ me }: { me: TeacherSelf }) {
         yearsExperience: Number(f.yearsExperience) || 0,
         languages: f.languages.split(',').map((s) => s.trim()).filter(Boolean),
         qualifications: quals.filter((x) => x.title.trim() && x.institution.trim()).map((x) => ({ ...x, year: x.year ? Number(x.year) : undefined })),
-        ...(f.avatarUrl.trim() ? { avatarUrl: f.avatarUrl.trim() } : {}),
       }),
     onSuccess: (d) => { qc.setQueryData(['teacher', 'me'], d); refresh(); toast.success('Profile saved'); },
     onError: (e) => toast.error(errorMessage(e)),
@@ -63,7 +62,7 @@ function About({ me }: { me: TeacherSelf }) {
         <Field label="Bio" htmlFor="p-bio" error={bioErr} hint="How you teach, who you help best, what a session looks like." className="sm:col-span-2"><Textarea rows={7} maxLength={4000} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>
         <Field label="Years of teaching experience" htmlFor="p-years"><Input type="number" min={0} max={60} value={f.yearsExperience} onChange={(e) => setF({ ...f, yearsExperience: Number(e.target.value) })} /></Field>
         <Field label="Teaching languages" htmlFor="p-langs" hint="Comma separated"><Input value={f.languages} onChange={(e) => setF({ ...f, languages: e.target.value })} /></Field>
-        <Field label="Photo URL (optional)" htmlFor="p-avatar" hint="An https:// link to a square photo" className="sm:col-span-2"><Input type="url" value={f.avatarUrl} onChange={(e) => setF({ ...f, avatarUrl: e.target.value })} placeholder="https://" /></Field>
+        <PhotoUpload me={me} />
         <div className="sm:col-span-2">
           <p className="text-[13px] font-medium">Qualifications</p>
           <div className="mt-2 space-y-2">
@@ -81,6 +80,39 @@ function About({ me }: { me: TeacherSelf }) {
         <div className="sm:col-span-2"><Button onClick={() => save.mutate()} loading={save.isPending} disabled={!!headlineErr || !!bioErr}>Save profile</Button></div>
       </div>
     </Card>
+  );
+}
+
+function PhotoUpload({ me }: { me: TeacherSelf }) {
+  const qc = useQueryClient();
+  const ref = useRef<HTMLInputElement>(null);
+  const done = (avatarUrl: string | null) => qc.setQueryData<TeacherSelf>(['teacher', 'me'], (old) => (old ? { ...old, avatarUrl } : old));
+  const upload = useMutation({
+    mutationFn: (file: File) => teacherService.uploadAvatar(file),
+    onSuccess: (r) => { done(r.avatarUrl); toast.success('Photo updated'); },
+    onError: (e) => toast.error(errorMessage(e)),
+    onSettled: () => { if (ref.current) ref.current.value = ''; },
+  });
+  const remove = useMutation({ mutationFn: teacherService.removeAvatar, onSuccess: () => { done(null); toast.success('Photo removed'); }, onError: (e) => toast.error(errorMessage(e)) });
+  const pick = (file?: File) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error('Photos must be 2 MB or smaller');
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return toast.error('Use a PNG, JPEG or WebP image');
+    upload.mutate(file);
+  };
+  return (
+    <div className="flex items-center gap-4 sm:col-span-2">
+      <Avatar name={me.user.fullName} src={me.avatarUrl} size={64} />
+      <div className="space-y-1.5">
+        <p className="text-[13px] font-medium">Profile photo</p>
+        <div className="flex flex-wrap gap-2">
+          <input ref={ref} id="p-avatar" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
+          <Button size="sm" variant="secondary" loading={upload.isPending} onClick={() => ref.current?.click()}><Camera />{me.avatarUrl ? 'Change photo' : 'Upload photo'}</Button>
+          {me.avatarUrl && <Button size="sm" variant="ghost" loading={remove.isPending} onClick={() => remove.mutate()}>Remove</Button>}
+        </div>
+        <p className="text-[12.5px] text-muted-foreground">Square PNG, JPEG or WebP, up to 2 MB. Shown on your public profile.</p>
+      </div>
+    </div>
   );
 }
 

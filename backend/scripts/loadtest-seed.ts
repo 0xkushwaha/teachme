@@ -112,13 +112,19 @@ async function main() {
     }
   }
 
-  // Tokens for k6 (1 hour)
+  // Tokens for k6 (2 hours): students, load-test teachers and the seeded admin.
   const secret = process.env.JWT_ACCESS_SECRET!;
+  const sign = (sub: string, role: 'STUDENT' | 'TEACHER' | 'ADMIN') =>
+    jwt.sign({ sub, role, sid: randomUUID() }, secret, { algorithm: 'HS256', expiresIn: 7200, issuer: 'teachme-api', audience: 'teachme-web' });
   const students = await prisma.user.findMany({ where: { email: { startsWith: 'lt-student-' } }, select: { id: true }, take: STUDENTS });
-  const tokens = students.map((u) => jwt.sign({ sub: u.id, role: 'STUDENT', sid: randomUUID() }, secret, { algorithm: 'HS256', expiresIn: 3600, issuer: 'teachme-api', audience: 'teachme-web' }));
+  const tokens = students.map((u) => sign(u.id, 'STUDENT'));
+  const teacherUsers = await prisma.user.findMany({ where: { email: { startsWith: 'lt-teacher-' } }, select: { id: true } });
+  const admin = await prisma.user.findFirst({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } });
   const out = join(__dirname, '..', '..', 'loadtest-results');
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, 'tokens.json'), JSON.stringify(tokens));
+  writeFileSync(join(out, 'teacher-tokens.json'), JSON.stringify(teacherUsers.map((u) => sign(u.id, 'TEACHER'))));
+  writeFileSync(join(out, 'admin-tokens.json'), JSON.stringify(admin ? [sign(admin.id, 'ADMIN')] : []));
   const counts = {
     users: await prisma.user.count(),
     teachers: await prisma.teacherProfile.count({ where: { approvalStatus: 'APPROVED' } }),

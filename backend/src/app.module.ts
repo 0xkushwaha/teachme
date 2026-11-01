@@ -31,6 +31,9 @@ import { MeetingsModule } from './modules/meetings/meetings.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SupportModule } from './modules/support/support.module';
+import { FilesModule } from './modules/files/files.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { OutboxDispatcher } from './jobs/outbox.dispatcher';
 import { QueueWorkersService } from './jobs/processors/queue-workers.service';
 
@@ -74,6 +77,9 @@ export class AppModule implements NestModule {
         MeetingsModule,
         AdminModule,
         SupportModule,
+        FilesModule,
+        OnboardingModule,
+        AnnouncementsModule,
         ...(opts.extraImports ?? []),
       ],
       controllers: [HealthController, MetricsController, PublicConfigController],

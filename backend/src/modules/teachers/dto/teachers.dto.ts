@@ -7,7 +7,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUrl,
   IsUUID,
   Matches,
   Max,
@@ -115,10 +114,6 @@ export class UpdateTeacherProfileDto {
   @Transform(({ value }) => (Array.isArray(value) ? value.map((v) => String(v).trim()).filter(Boolean) : value))
   languages?: string[];
 
-  @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
-  @MaxLength(500)
-  avatarUrl?: string;
 }
 
 export class TeacherSubjectDto {

@@ -23,6 +23,7 @@ import {
   AdminTeachersQuery,
   AdminUsersQuery,
   AuditQuery,
+  RemoveUserDto,
   ResolveDiscrepancyDto,
   TeacherApprovalDto,
   TicketsQuery,
@@ -64,6 +65,12 @@ export class AdminController {
   @Patch('users/:id/status')
   userStatus(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserStatusDto) {
     return this.admin.setUserStatus(a, id, dto.status, dto.reason);
+  }
+  @Get('users/:id') userDetail(@Param('id', ParseUUIDPipe) id: string) { return this.admin.userDetail(id); }
+  @Post('users/:id/remove')
+  @HttpCode(200)
+  removeUser(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RemoveUserDto) {
+    return this.admin.removeUser(a, id, dto.confirmEmail, dto.reason);
   }
   @Patch('users/:id/role')
   userRole(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserRoleDto) {

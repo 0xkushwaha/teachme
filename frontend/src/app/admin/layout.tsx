@@ -1,5 +1,5 @@
 'use client';
-import { Activity, BookOpen, CalendarRange, CreditCard, GraduationCap, LayoutDashboard, LifeBuoy, Mail, ScrollText, Settings2, Users } from 'lucide-react';
+import { Activity, BookOpen, CalendarRange, CreditCard, GraduationCap, HandCoins, LayoutDashboard, LifeBuoy, Mail, Megaphone, ScrollText, Settings2, TrendingUp, Users } from 'lucide-react';
 import { DashboardShell } from '@/layouts/dashboard-shell';
 
 const NAV = [
@@ -9,7 +9,10 @@ const NAV = [
   { href: '/admin/subjects', label: 'Subjects', icon: BookOpen },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarRange },
   { href: '/admin/payments', label: 'Payments & refunds', icon: CreditCard },
+  { href: '/admin/finance', label: 'Finance reports', icon: TrendingUp },
+  { href: '/admin/payouts', label: 'Teacher payouts', icon: HandCoins },
   { href: '/admin/integrations', label: 'Integration health', icon: Activity },
+  { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/admin/templates', label: 'Notification templates', icon: Mail },
   { href: '/admin/support', label: 'Support tickets', icon: LifeBuoy },
   { href: '/admin/audit', label: 'Audit log', icon: ScrollText },

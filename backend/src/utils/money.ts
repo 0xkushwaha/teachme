@@ -40,6 +40,19 @@ export function calculatePrice(hourlyRateMinor: number, durationMinutes: number,
   return { priceMinor, platformFeeMinor, taxMinor, totalMinor: priceMinor + platformFeeMinor + taxMinor };
 }
 
+/**
+ * What the teacher earns for a completed session. The teacher's share is the session price
+ * (`priceMinor`, i.e. before platform fee and tax). If part of the payment was refunded, the
+ * share is reduced pro rata, rounding down so the platform never pays out more than it kept.
+ * Must match the backfill in migration 20261101120000.
+ */
+export function teacherEarningMinor(priceMinor: number, totalMinor: number, netPaidMinor: number): number {
+  if (![priceMinor, totalMinor, netPaidMinor].every(Number.isSafeInteger)) throw new RangeError('amounts must be safe integers');
+  if (priceMinor < 0 || totalMinor <= 0 || netPaidMinor <= 0) return 0;
+  if (netPaidMinor >= totalMinor) return priceMinor;
+  return Math.floor((priceMinor * netPaidMinor) / totalMinor);
+}
+
 export function formatMinor(amountMinor: number, currency = 'INR'): string {
   const major = Math.floor(amountMinor / 100);
   const minor = amountMinor % 100;

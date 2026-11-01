@@ -67,6 +67,24 @@ class TestControlController {
     return { id: user.id, token: this.tokens.signAccess({ sub: user.id, role: 'STUDENT', sid: randomUUID() }) };
   }
 
+  /** Creates an admin with the given password (UI login in admin journeys). */
+  @Post('admins')
+  async admin(@Body() body: { password: string }) {
+    const prisma = new PrismaClient();
+    const user = await prisma.user.create({
+      data: {
+        email: `e2e-admin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@teachme.test`,
+        passwordHash: await argon2.hash(body.password, { type: argon2.argon2id }),
+        fullName: 'E2E Admin',
+        role: 'ADMIN',
+        emailVerifiedAt: new Date(),
+        privacyConsentAt: new Date(),
+      },
+    });
+    await prisma.$disconnect();
+    return { id: user.id, email: user.email };
+  }
+
   @Get('reminders/:bookingId')
   async reminders(@Param('bookingId') bookingId: string) {
     const delayed = await this.jobs.queue(QUEUES.reminders).getDelayed(0, 1000);

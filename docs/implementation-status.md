@@ -53,7 +53,27 @@ Bugs found and fixed in session 3: `/auth/refresh` without a session crashed wit
 
 Final results (session 3): backend unit **69/69**, integration **49/49**, E2E **12/12**; lint, typecheck and production builds clean for both apps; `npm audit --omit=dev` 0 vulnerabilities.
 
+## Session 4: three-role upgrade (1 Nov 2026)
+
+Audit first ([upgrade-audit.md](upgrade-audit.md)), then extended the existing app — nothing rebuilt, no data reset. One additive migration (`20261101120000_onboarding_earnings_payouts`).
+
+- **Teacher invitations & onboarding:** admin invite / resend (token rotation) / revoke / expiry; hashed single-use tokens claimed with compare-and-set; acceptance creates a verified TEACHER account; open teacher sign-up off by default. Application checklist → document upload (content-sniffed, ≤ 5 MB) → submit → admin review (document verify/reject, approve, reject **with reason**) → resubmit. Photo upload replaces external avatar URLs.
+- **Teacher dashboard:** Earnings & payouts page (available / clearing / pending-from-upcoming / this month / lifetime, 12-week and 12-month charts, cancellation rate, ledger, payout history, request/cancel payout); Application & documents page; "Mark completed" after a session ends.
+- **Earnings integrity:** append-only ledger enforced by a DB trigger, written in the completion transaction (one per booking via partial unique index); pro-rata on refunds; teacher overview's 30-day figure now comes from the ledger (it previously counted future, unpaid sessions).
+- **Payouts (manual):** one open request per teacher (advisory lock + partial unique index), admin approve → mark paid with bank reference / reject (releases entries), emails at each step. No payment provider is called.
+- **Admin:** invitations tab, review queue split into *awaiting review* / *still applying*, teacher detail (documents, profile, stats, recent bookings, ledger, adjustments), finance reports (collected, refunds, fees, tax, earnings accrued, payouts, outstanding balance, top teachers, CSV with formula-injection-safe cells), payout queue, announcements, account detail with activity + removal by re-typing the email, booking search.
+- **Student:** Payments & receipts (history incl. refunds and failures, printable receipt).
+- **Emails:** `teacher_invitation`, `teacher_welcome`, `teacher_application_submitted`, `admin_teacher_application`, `payout_update`; `teacher_approval` now carries the rejection reason.
+- **Ops:** nginx allows larger bodies only on the two upload routes; settings `onboarding.rules`, `payouts.rules`.
+
+Bugs found and fixed this session: teacher overview over-reported earnings (included unearned future sessions); production nginx would have rejected every upload (256 KB body limit); integration suite could hit per-IP route limits from a previous run (now simulates distinct clients behind one trusted proxy hop, as in production).
+
+Tests after session 4: backend unit **79/79** (10 new), integration **65/65** (16 new: invitations incl. 6-way acceptance race, uploads/polyglots/oversize, application approve/reject/resubmit, document access control, avatar serving, completion race → exactly one earning, ledger immutability, 4-way payout race → exactly one, payout lifecycle, receipts, finance CSV, account removal, announcements); lint/typecheck/build clean for both apps; E2E **16/16** (4 new: admin invites from the UI → email via Mailpit → teacher accepts → lands on application → link cannot be reused → teacher refused by admin API). Verified live in the browser against the running stack with real SMTP → Mailpit (invitation, welcome, application received, admin alert, approval). `docs/openapi.json` re-exported (85 → 122 paths).
+
+Load test (stepped 100/500/1,000/2,000 concurrent users, one laptop, one API process): **0 errors in 148,104 requests** at every tier; p95 30 / 21 / 144 / 356 ms; p99 at 1,000–2,000 users 0.7–0.9 s and reservation p95 1.6–2.0 s — PostgreSQL CPU is the bottleneck. Supports ~500 concurrent users comfortably on this hardware; 2,000 is *not* demonstrated at production quality. Details and next steps: [load-testing.md](load-testing.md).
+
 ## Not started yet (next sessions)
+0. From session 4: staging load test on dedicated Postgres + 2–3 API replicas (the 2,000-user target); malware scanning for uploaded documents; real Razorpay test keys to exercise earnings from real captured payments end to end; a payout bank-details form (teachers currently share bank details with support out of band).
 1. Per-page `<title>` metadata for client dashboard pages (currently the site default).
 2. Admin MFA (TOTP/SSO); legal review of terms/privacy/refund pages.
 3. Load test on production-like staging (2+ API replicas, separate load generator).

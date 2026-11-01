@@ -1,26 +1,36 @@
 'use client';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useState } from 'react';
-import { Select } from '@/components/ui/form';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { Input, Select } from '@/components/ui/form';
 import { EmptyState, ErrorState, PageHeader, Pagination, Skeleton, StatusBadge, Table } from '@/components/ui/primitives';
 import { useAuth } from '@/hooks/use-auth';
 import { errorMessage } from '@/lib/api';
 import { adminService } from '@/services/admin';
 import { formatDateTime, formatMoney, STATUS_LABEL } from '@/utils/format';
 
-export default function AdminBookings() {
+export default function Page() {
+  return <Suspense><AdminBookings /></Suspense>;
+}
+
+function AdminBookings() {
   const { timezone } = useAuth();
+  const teacherId = useSearchParams().get('teacherId') ?? undefined;
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const q = useQuery({ queryKey: ['admin', 'bookings', status, page], queryFn: () => adminService.bookings({ status: status || undefined, page }), placeholderData: keepPreviousData });
+  const q = useQuery({ queryKey: ['admin', 'bookings', status, search, teacherId, page], queryFn: () => adminService.bookings({ status: status || undefined, q: search.trim() || undefined, teacherId, page }), placeholderData: keepPreviousData });
   return (
     <>
-      <PageHeader title="Bookings" description="Every booking across the platform, newest first." actions={
-        <Select aria-label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="w-52">
-          <option value="">All statuses</option>
-          {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </Select>
+      <PageHeader title="Bookings" description={teacherId ? <>Bookings for one teacher. <Link href="/admin/bookings" className="underline underline-offset-4">Show all</Link></> : 'Every booking across the platform, newest first.'} actions={
+        <>
+          <Input aria-label="Search bookings" placeholder="Student, teacher, subject or booking ID" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="w-full sm:w-72" />
+          <Select aria-label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="w-full sm:w-52">
+            <option value="">All statuses</option>
+            {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </Select>
+        </>
       } />
       {q.isError ? <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} /> : q.isLoading ? <Skeleton className="h-96 rounded-2xl" /> : q.data?.data.length ? (
         <>

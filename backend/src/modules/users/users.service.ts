@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { AppConfig } from '../../config/app-config';
 import { PrismaService } from '../../database/prisma.service';
 import { AppError, ErrorCode } from '../../common/errors';
@@ -61,6 +62,15 @@ export class UsersService {
     if (!(await this.passwords.verify(user.passwordHash, password)))
       throw new AppError(ErrorCode.INVALID_CREDENTIALS, 'Password is incorrect', HttpStatus.BAD_REQUEST);
     if (user.role === 'ADMIN') throw AppError.forbidden('Admin accounts must be removed by another administrator');
+    await this.erase(userId, { actorId: userId, actorRole: user.role });
+  }
+
+  /**
+   * Erases/pseudonymises personal data. Shared by self-service deletion and admin removal.
+   * Refuses while the account has upcoming sessions (they must be cancelled first).
+   */
+  async erase(userId: string, by: { actorId: string; actorRole: Role; reason?: string }) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { teacherProfile: true, calendarConnections: true } });
     const upcoming = await this.prisma.booking.count({
       where: {
         status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
@@ -68,7 +78,11 @@ export class UsersService {
         OR: [{ studentId: userId }, ...(user.teacherProfile ? [{ teacherId: user.teacherProfile.id }] : [])],
       },
     });
-    if (upcoming) throw AppError.unprocessable(ErrorCode.BOOKING_POLICY_VIOLATION, 'Cancel your upcoming sessions before deleting your account');
+    if (upcoming)
+      throw AppError.unprocessable(
+        ErrorCode.BOOKING_POLICY_VIOLATION,
+        by.actorId === userId ? 'Cancel your upcoming sessions before deleting your account' : `This account has ${upcoming} upcoming session(s); cancel them first`,
+      );
 
     for (const c of user.calendarConnections) {
       if (c.encryptedRefreshToken) await this.calendar.revoke(decrypt(c.encryptedRefreshToken, this.config.env.DATA_ENCRYPTION_KEY)).catch(() => undefined);
@@ -79,6 +93,8 @@ export class UsersService {
       await tx.calendarConnection.deleteMany({ where: { userId } });
       await tx.notification.deleteMany({ where: { userId } });
       await tx.notificationPreference.deleteMany({ where: { userId } });
+      // Uploaded documents and photos are personal data (document rows cascade with their files).
+      await tx.storedFile.deleteMany({ where: { ownerId: userId } });
       await tx.studentProfile.updateMany({ where: { userId }, data: { gradeLevel: null, learningGoals: null, preferredLanguage: null } });
       if (user.teacherProfile) {
         await tx.teacherProfile.update({
@@ -97,7 +113,12 @@ export class UsersService {
           deletedAt: new Date(),
         },
       });
-      await this.audit.record({ actorId: userId, action: 'privacy.account_deleted', entityType: 'User', entityId: userId }, tx);
+      await this.audit.record(
+        by.actorId === userId
+          ? { actorId: userId, action: 'privacy.account_deleted', entityType: 'User', entityId: userId }
+          : { actorId: by.actorId, actorRole: by.actorRole, action: 'admin.user_removed', entityType: 'User', entityId: userId, metadata: { role: user.role, reason: by.reason ?? null } },
+        tx,
+      );
     });
   }
 }
