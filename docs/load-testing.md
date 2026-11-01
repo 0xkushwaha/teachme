@@ -81,7 +81,56 @@ SMTP target is local Mailpit (near-zero latency). Real providers impose sending 
 | PostgreSQL | 16 % | 104 % | 309 MiB |
 | Redis | 2 % | 4 % | 20 MiB |
 
-## Capacity interpretation
+## Stepped concurrency test: 100 → 500 → 1,000 → 2,000 users (1 Nov 2026, session 4)
+
+Scenario `loadtest/concurrency-tiers.js` (run: `./scripts/run-loadtest.sh concurrency-tiers`, after `npx ts-node --transpile-only scripts/loadtest-seed.ts` for fresh tokens). Raw output: `loadtest-results/concurrency-tiers.{json,txt}`, resource samples `loadtest-results/resources.csv`.
+
+**Model.** Closed model: each virtual user is one *concurrently active* user with 3–8 s think time between page views. Each tier ramps for 30 s, holds for 2 min, then ramps down; 20 s gap between tiers. Personas by VU: 55 % anonymous visitors (subjects, filtered/sorted search, teacher profile, 7-day slots), 30 % students (me/overview/unread, booking history, payments; password login via Argon2id on 1 in 20 iterations; reserve + release a real slot on 1 in 15), 10 % teachers (overview, earnings summary, 12-week/12-month series, ledger, upcoming bookings, application), 5 % admins (overview, review queue, booking search, finance summary, payout queue). Data: 3,169 users, 163 teachers, 18,002 bookings.
+
+**Environment.** Same as above: one Apple M2 laptop (8 cores, 8 GB) running the production build of **one** API process (`connection_limit=40`) and one worker, PostgreSQL 16 and Redis 7 in Docker Desktop (4 GB VM), **and the k6 load generator in the same Docker VM**. Every tier competes with k6 for the same CPUs, so these numbers are conservative.
+
+| Tier (concurrent users) | Requests | Throughput (steady) | Errors | p50 | p95 | p99 | max |
+|---|---|---|---|---|---|---|---|
+| 100 | 4,144 | ≈ 26 req/s | **0 %** | 12 ms | **30 ms** | 70 ms | 154 ms |
+| 500 | 20,830 | ≈ 130 req/s | **0 %** | 5 ms | **21 ms** | 68 ms | 712 ms |
+| 1,000 | 41,456 | ≈ 259 req/s | **0 %** | 4 ms | **144 ms** | 675 ms | 2.9 s |
+| 2,000 | 81,672 | ≈ 510 req/s | **0 %** | 11 ms | **356 ms** | 851 ms | 3.9 s |
+
+148,104 requests in total; **147,518 / 147,518 checks passed**; 584 real reservations created and released; all 2,000 VUs reached.
+
+p95 by workflow (ms):
+
+| Tier | Browse/search | Student dashboard & history | Teacher dashboard & earnings | Admin operations | Login (Argon2id) | Reserve slot |
+|---|---|---|---|---|---|---|
+| 100 | 21 | 29 | 33 | 83 | 73 | 67 |
+| 500 | 13 | 16 | 23 | 67 | 51 | 56 |
+| 1,000 | 103 | 134 | 170 | 287 | 43 | **1,990** |
+| 2,000 | 319 | 379 | 394 | 423 | 116 | **1,619** |
+
+Resource usage during each steady hold (average / max over 5 s samples; 100 % = one core):
+
+| Tier | API CPU | API RSS | PostgreSQL CPU | PostgreSQL mem | Redis CPU | Worker CPU |
+|---|---|---|---|---|---|---|
+| 100 | 23 / 43 % | 145 MiB | 13 / 20 % | 430 MiB | 2 % | ~0 % |
+| 500 | 48 / 61 % | 141 MiB | 62 / 575 % | 610 MiB | 3 % | 1 % |
+| 1,000 | 63 / 123 % | 149 MiB | 105 / 515 % | 951 MiB | 5 % | 1 % |
+| 2,000 | 144 / 204 % | 153 MiB | **220 / 441 %** | 998 MiB | 14 % | 1 % |
+
+Event-loop lag p99 at the end of the run: 19 ms.
+
+### What this shows, and what it does not
+- **Up to 500 concurrent active users** one API process is far inside the 500 ms p95 target for every workflow.
+- **At 1,000 and 2,000** every request still succeeded and overall p95 stayed under 500 ms (144 / 356 ms), but the **tail is no longer acceptable**: p99 reached 0.7–0.9 s, and **slot reservation p95 was 1.6–2.0 s**. Against the 500 ms target, this single-machine setup supports ~500 concurrent users comfortably and 1,000–2,000 with degraded tails. **It does not demonstrate production-quality service for 2,000 concurrent users.**
+- **Bottleneck: PostgreSQL CPU** (2.2 cores average, bursts to 4–6 cores at 2,000 users) on a laptop it shares with the load generator, and the 40-connection pool in front of it. The API process itself used ~1.4 cores and 150 MiB, and Redis and the worker were idle. Reservations suffer most because each runs a multi-statement transaction (stale-hold expiry, exclusion-checked insert, history row, idempotency record) that waits for both a pool connection and DB CPU.
+- Not measured here: multiple API replicas, network latency between tiers, the Next.js frontend (SSR) under load, external providers.
+
+### Improvements for 1,000–2,000 concurrent users (in order)
+1. Run PostgreSQL on dedicated hardware (≥ 4 vCPU managed instance) and the load generator on a separate host; re-run this scenario on staging. This is the single largest factor.
+2. Run 2–3 API replicas (stateless already; Redis-backed rate limits and `SKIP LOCKED` outbox are multi-replica safe), keeping total connections under `max_connections` via PgBouncer (transaction mode) as described in [deployment.md](deployment.md).
+3. Cache the most frequent anonymous reads for a few seconds (teacher search pages and public profiles; availability stays uncached for correctness), and the admin overview/finance aggregates for 30–60 s.
+4. Enable `pg_stat_statements` on staging to rank queries by total time before changing indexes; the new earnings/payout/review queries are already indexed (see [database.md](database.md)).
+
+## Capacity interpretation (original mixed workload)
 - **3,000 registered users** is a modest load. Assuming a generous 5–10 % concurrently active at peak (150–300 users), the measured ~200 concurrent virtual users with think time — plus 25 bookings/s and 5 logins/s — were served by **one** API process at ~0.5 core average with p95 latencies an order of magnitude under the 500 ms target.
 - These results do **not** demonstrate 3,000 *simultaneous* active users; that was not tested. Extrapolating linearly is not safe, but the headroom (p95 ≈ 9–25 ms, one core) and stateless design suggest 2–4 API replicas behind a load balancer would handle it; validate on production-like infrastructure before claiming it.
 - **Most expensive request:** login (Argon2id, ~25 ms CPU each). A login storm is CPU-bound — scale API replicas; per-IP auth limits cap abuse.

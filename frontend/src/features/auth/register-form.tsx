@@ -1,6 +1,6 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { BookOpen, Presentation } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -12,6 +12,7 @@ import { Alert } from '@/components/ui/primitives';
 import { homeFor, useAuth } from '@/hooks/use-auth';
 import { errorMessage } from '@/lib/api';
 import { authService } from '@/services/auth';
+import { catalogService } from '@/services/catalog';
 import { cn } from '@/utils/cn';
 import { browserTimezone } from '@/utils/format';
 import { AuthCard, safeNext } from './auth-card';
@@ -37,13 +38,16 @@ export function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   const { setUser } = useAuth();
+  const platform = useQuery({ queryKey: ['public', 'platform'], queryFn: catalogService.platform, staleTime: 60_000 });
+  const teachersOpen = platform.data?.registration.teachers ?? false;
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { role: params.get('role') === 'TEACHER' ? 'TEACHER' : 'STUDENT' } });
   const role = form.watch('role');
+  const wantsToTeach = params.get('role') === 'TEACHER';
   const register = useMutation({
-    mutationFn: (v: Values) => authService.register({ ...v, email: v.email.toLowerCase(), timezone: browserTimezone() }),
+    mutationFn: (v: Values) => authService.register({ ...v, role: teachersOpen ? v.role : 'STUDENT', email: v.email.toLowerCase(), timezone: browserTimezone() }),
     onSuccess: (user) => {
       setUser(user);
-      router.replace(user.role === 'TEACHER' ? '/teacher/profile?welcome=1' : safeNext(params.get('next'), homeFor(user.role)));
+      router.replace(user.role === 'TEACHER' ? '/teacher/application?welcome=1' : safeNext(params.get('next'), homeFor(user.role)));
     },
   });
   const e = form.formState.errors;
@@ -55,7 +59,12 @@ export function RegisterForm() {
     <AuthCard title="Create your account" description="It takes under a minute." footer={<>Already have an account? <Link href="/login" className="font-medium text-accent hover:underline">Log in</Link></>}>
       <form className="space-y-4" onSubmit={form.handleSubmit((v) => register.mutate(v))} noValidate>
         {register.isError && <Alert tone="danger">{errorMessage(register.error)}</Alert>}
-        <fieldset>
+        {!teachersOpen && wantsToTeach && platform.isSuccess && (
+          <Alert tone="info" title="Teacher accounts are by invitation">
+            Our team invites teachers by email. <Link href="/contact" className="underline underline-offset-4">Contact us</Link> to apply — you can still create a student account below.
+          </Alert>
+        )}
+        <fieldset className={cn(!teachersOpen && 'hidden')}>
           <legend className="sr-only">Account type</legend>
           <div className="grid grid-cols-2 gap-2">
             {roles.map((r) => (
@@ -67,7 +76,7 @@ export function RegisterForm() {
             ))}
           </div>
         </fieldset>
-        {role === 'TEACHER' && <p className="text-[13px] text-muted-foreground">Teacher profiles are reviewed by our team before students can book them.</p>}
+        {teachersOpen && role === 'TEACHER' && <p className="text-[13px] text-muted-foreground">Teacher profiles are reviewed by our team before students can book them.</p>}
         <Field label="Full name" htmlFor="fullName" error={e.fullName?.message}><Input autoComplete="name" {...form.register('fullName')} /></Field>
         <Field label="Email" htmlFor="email" error={e.email?.message}><Input type="email" autoComplete="email" {...form.register('email')} /></Field>
         <Field label="Password" htmlFor="password" error={e.password?.message} hint="10+ characters with upper case, lower case and a number"><Input type="password" autoComplete="new-password" {...form.register('password')} /></Field>

@@ -55,6 +55,16 @@ Frontend: `NEXT_PUBLIC_APP_URL` (build arg) and `BACKEND_INTERNAL_URL` (build ar
 
 The API validates configuration at boot and refuses to start on invalid values.
 
+No new environment variables were introduced in session 4. New behaviour is configured through platform settings (Admin › System settings), with safe defaults in code:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `features.flags.teacherRegistration` | **`false`** (was `true`) | Open teacher applications without an invitation. Off = invite-only. An existing stored value is kept on upgrade. |
+| `onboarding.rules` | `{ invitationTtlHours: 168, requireDocuments: true, maxDocuments: 10 }` | Invitation lifetime; whether at least one document is needed to submit/approve |
+| `payouts.rules` | `{ enabled: true, minPayoutMinor: 50000, clearingDays: 3 }` | Manual payout requests: minimum ₹500, 3-day hold after a session before it can be paid out |
+
+**Uploads at the edge:** `infrastructure/deployment/nginx.conf` keeps `client_max_body_size 256k` globally and raises it only for `POST /api/v1/teachers/me/documents` (6 MB) and `/avatar` (3 MB). Any other proxy/CDN in front of the API needs the same exceptions.
+
 ## Release procedure
 1. CI green (lint, types, unit, integration, E2E, builds, audit).
 2. Run migrations once: `docker run --rm --env-file backend.env $REGISTRY/teachme-backend:$TAG npx prisma migrate deploy` (or `docker compose --profile migrate run --rm migrate`). Migrations are additive/backward-compatible so old replicas keep working during the roll.
@@ -88,10 +98,12 @@ Connection budgeting: `replicas × connection_limit` (API) + `workers × connect
   ```
   Then point a staging API at it and confirm login, a teacher profile and Admin › Payments load.
 - After a PITR restore, run payment reconciliation (Admin › Payments › Reconcile, or wait for the 10-minute job) so any payments captured after the restore point are re-settled from Razorpay, and re-run the reminder sweeper (automatic).
+- Uploaded documents and photos are stored in PostgreSQL (`StoredFile.data`), so they are covered by the same snapshots and PITR — no second storage system to back up. Expect roughly (teachers × documents × ~1 MB); monitor table size (`SELECT pg_size_pretty(pg_total_relation_size('"StoredFile"'))`).
 - Redis holds only reconstructable state (queues, caches, rate limits, OAuth state). Losing it is survivable: the outbox, reconciliation job and reminder sweeper repair side effects.
 
 ## Scaling notes
 - API and worker are stateless; scale horizontally on CPU. Argon2 logins are the most CPU-intensive request type (~tens of ms of CPU each).
 - Read-heavy public pages reuse API responses from Next’s 60 s data cache and subjects are cached in Redis; availability is deliberately **not** cached.
 - The booking path’s correctness never depends on replica count (database constraints + row locks).
+- File storage lives in Postgres so any replica can serve uploads without shared disk or new infrastructure. This is right for the expected volume (a few documents per teacher). If uploads grow (e.g. student assignments, video), move `StoredFile.data` to S3-compatible object storage behind the same `FilesService` and serve via signed URLs.
 - See [load-testing.md](load-testing.md) for measured capacity.

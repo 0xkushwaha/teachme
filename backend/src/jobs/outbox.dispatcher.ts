@@ -9,6 +9,8 @@ import type { DomainEventType } from '../services/outbox.service';
 import { NotificationsService } from '../modules/notifications/notifications.service';
 import { NotificationContextService } from '../modules/notifications/notification-context.service';
 import { ReminderSchedulerService } from '../modules/notifications/reminder-scheduler.service';
+import { EmailSenderService } from '../modules/notifications/email-sender.service';
+import { EmailDeliveryError } from '../integrations/email/email-provider';
 import { formatMinor } from '../utils/money';
 import { formatInZone } from '../utils/time';
 import { sha256 } from '../utils/crypto';
@@ -40,6 +42,7 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
     private readonly settings: SettingsService,
     private readonly config: AppConfig,
     private readonly metrics: MetricsService,
+    private readonly emailSender: EmailSenderService,
   ) {}
 
   onApplicationBootstrap() {
@@ -249,7 +252,7 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
         const status = String(p.status);
         const message = {
           APPROVED: 'Your profile has been approved. Students can now discover you and book sessions in your available hours.',
-          REJECTED: 'Your application was not approved at this time. Reply to this email or contact support for details.',
+          REJECTED: 'Your application was not approved this time. You can update your profile or documents and submit it again from your dashboard.',
           SUSPENDED: 'Your profile has been suspended and is hidden from students. Contact support for details.',
           PENDING: 'Your profile is under review again.',
         }[status] ?? 'Your profile status changed.';
@@ -257,8 +260,93 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
           userId: t.userId,
           templateKey: 'teacher_approval',
           dedupeKey: `approval.${e.id}`,
-          data: { user: { name: firstName(t.user.fullName) }, approval: { status: status.toLowerCase(), message }, dashboard: { url: `${app}/teacher` } },
-          link: '/teacher',
+          data: { user: { name: firstName(t.user.fullName) }, approval: { status: status.toLowerCase(), message, reason: p.reason ? String(p.reason) : '' }, dashboard: { url: `${app}/teacher/application` } },
+          link: status === 'REJECTED' ? '/teacher/application' : '/teacher',
+        });
+        return;
+      }
+      case 'teacher.invited': {
+        const token = String(p.token);
+        if (token === '[redacted]') return;
+        const inv = await this.prisma.teacherInvitation.findUnique({ where: { id: String(p.invitationId) } });
+        // A resend rotates the token; only the newest link is ever emailed.
+        if (!inv || inv.status !== 'PENDING' || inv.tokenHash !== sha256(token) || inv.expiresAt <= new Date()) return;
+        const tz = 'Asia/Kolkata';
+        try {
+          await this.emailSender.sendDirect(
+            inv.email,
+            'teacher_invitation',
+            { invite: { link: `${app}/invite?token=${encodeURIComponent(token)}`, email: inv.email, expires: formatInZone(inv.expiresAt, tz) } },
+            `invite.${inv.id}.${inv.sendCount}`,
+          );
+          await this.prisma.teacherInvitation.updateMany({ where: { id: inv.id, tokenHash: inv.tokenHash }, data: { deliveredAt: new Date(), lastDeliveryError: null } });
+        } catch (err) {
+          await this.prisma.teacherInvitation.updateMany({ where: { id: inv.id, tokenHash: inv.tokenHash }, data: { lastDeliveryError: String((err as Error).message).slice(0, 500) } });
+          if (err instanceof EmailDeliveryError && err.permanent) return; // e.g. rejected address: retrying won't help
+          throw err;
+        }
+        return;
+      }
+      case 'teacher.registered': {
+        const t = await this.prisma.teacherProfile.findUniqueOrThrow({ where: { id: String(p.teacherId) }, include: { user: true } });
+        await this.notifications.notify({
+          userId: t.userId,
+          templateKey: 'teacher_welcome',
+          dedupeKey: `teacher_welcome.${t.id}`,
+          data: { user: { name: firstName(t.user.fullName) }, dashboard: { url: `${app}/teacher/application` } },
+          link: '/teacher/application',
+        });
+        return;
+      }
+      case 'teacher.application_submitted': {
+        const t = await this.prisma.teacherProfile.findUniqueOrThrow({ where: { id: String(p.teacherId) }, include: { user: true, _count: { select: { documents: true } } } });
+        await this.notifications.notify({
+          userId: t.userId,
+          templateKey: 'teacher_application_submitted',
+          dedupeKey: `application_submitted.${e.id}`,
+          data: { user: { name: firstName(t.user.fullName) }, dashboard: { url: `${app}/teacher/application` } },
+          link: '/teacher/application',
+        });
+        const admins = await this.prisma.user.findMany({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } });
+        for (const a of admins) {
+          await this.notifications.notify({
+            userId: a.id,
+            templateKey: 'admin_teacher_application',
+            dedupeKey: `admin_application.${e.id}.${a.id}`,
+            data: { teacher: { name: t.user.fullName, email: t.user.email, documents: t._count.documents }, admin: { url: `${app}/admin/teachers/${t.id}` } },
+            link: `/admin/teachers/${t.id}`,
+          });
+        }
+        return;
+      }
+      case 'payout.updated': {
+        const payout = await this.prisma.teacherPayout.findUniqueOrThrow({ where: { id: String(p.payoutId) }, include: { teacher: { include: { user: true } } } });
+        const status = String(p.status);
+        if (status === 'REQUESTED') {
+          const admins = await this.prisma.user.findMany({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } });
+          for (const a of admins) {
+            await this.notifications.notify({
+              userId: a.id,
+              templateKey: 'admin_alert',
+              dedupeKey: `payout_requested.${payout.id}.${a.id}`,
+              data: { alert: { title: 'Payout requested', detail: `${payout.teacher.user.fullName} requested a payout of ${formatMinor(payout.amountMinor, payout.currency)}.` }, admin: { url: `${app}/admin/payouts` } },
+              channels: ['IN_APP'],
+              link: '/admin/payouts',
+            });
+          }
+          return;
+        }
+        if (status === 'CANCELLED') return; // the teacher did this themselves
+        await this.notifications.notify({
+          userId: payout.teacher.userId,
+          templateKey: 'payout_update',
+          dedupeKey: `payout.${payout.id}.${status}`,
+          data: {
+            user: { name: firstName(payout.teacher.user.fullName) },
+            payout: { amount: formatMinor(payout.amountMinor, payout.currency), status: status.toLowerCase(), reference: status === 'PAID' ? (payout.reference ?? '') : '', reason: status === 'REJECTED' ? (payout.rejectionReason ?? '') : '' },
+            dashboard: { url: `${app}/teacher/earnings` },
+          },
+          link: '/teacher/earnings',
         });
         return;
       }

@@ -19,5 +19,7 @@ export const TEST_ENV: Record<string, string> = {
   SMTP_PORT: '1025',
   OUTBOX_AUTOSTART: 'false',
   THROTTLE_GLOBAL_LIMIT: '100000',
+  // One proxy hop, as in production behind nginx: suites can simulate distinct clients via X-Forwarded-For.
+  TRUST_PROXY: '1',
   RUN_WORKERS_IN_API: 'false',
 };

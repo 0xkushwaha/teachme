@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { Catalogue, Paginated, Quote, Slot, TeacherCard, TeacherProfile } from '@/types/api';
+import type { Catalogue, PlatformConfig, Paginated, Quote, Slot, TeacherCard, TeacherProfile } from '@/types/api';
 
 export interface TeacherSearch {
   subject?: string;
@@ -15,6 +15,7 @@ export interface TeacherSearch {
 }
 
 export const catalogService = {
+  platform: () => api<PlatformConfig>('/platform/config'),
   subjects: () => api<Catalogue>('/subjects'),
   teachers: (q: TeacherSearch) => api<Paginated<TeacherCard>>('/teachers', { query: q as Record<string, string | number> }),
   teacher: (slug: string) => api<TeacherProfile>(`/teachers/${encodeURIComponent(slug)}`),

@@ -11,6 +11,7 @@ import { MetricsService } from '../../services/metrics.service';
 import { calculatePrice } from '../../utils/money';
 import { addMinutes } from '../../utils/time';
 import { AvailabilityService } from '../availability/availability.service';
+import { EarningsService } from '../earnings/earnings.service';
 import { assertTransition, InvalidTransitionError } from './booking-state';
 import { CancelActor, decideRefund, PolicySnapshot, rescheduleCheck } from './booking-policy';
 import { BOOKING_INCLUDE, toBookingView, Viewer } from './booking.mapper';
@@ -34,6 +35,7 @@ export class BookingsService {
     private readonly outbox: OutboxService,
     private readonly audit: AuditService,
     private readonly metrics: MetricsService,
+    private readonly earnings: EarningsService,
   ) {}
 
   /**
@@ -274,7 +276,7 @@ export class BookingsService {
     return this.view(actor, bookingId);
   }
 
-  /** Marks finished sessions COMPLETED (maintenance job). */
+  /** Marks finished sessions COMPLETED (maintenance job) and records the teacher's earning. */
   async completeFinished(now = new Date()) {
     const due = await this.prisma.booking.findMany({
       where: { status: 'CONFIRMED', endAt: { lt: now } },
@@ -283,10 +285,34 @@ export class BookingsService {
     });
     for (const b of due) {
       await this.prisma
-        .$transaction((tx) => this.transition(tx, b, 'COMPLETED', { reason: 'Session ended', data: { completedAt: now } }))
+        .$transaction(async (tx) => {
+          await this.transition(tx, b, 'COMPLETED', { reason: 'Session ended', data: { completedAt: now } });
+          await this.earnings.recordSessionEarning(tx, b.id);
+        })
         .catch((err) => this.logger.warn({ err, bookingId: b.id }, 'Could not complete booking'));
     }
     return due.length;
+  }
+
+  /**
+   * Teacher confirms a session took place. Allowed only for their own confirmed booking after its
+   * scheduled end; otherwise the maintenance job completes it automatically.
+   */
+  async complete(actor: AuthUser, bookingId: string) {
+    const booking = await this.loadAuthorized(actor, bookingId);
+    if (actor.role !== 'ADMIN' && booking.teacherId !== actor.teacherProfileId) throw AppError.notFound('Booking');
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      const b = await this.lock(tx, booking.id);
+      if (b.status !== 'CONFIRMED')
+        throw AppError.unprocessable(ErrorCode.BOOKING_INVALID_STATE, `A ${b.status.toLowerCase().replace('_', ' ')} booking cannot be marked completed`);
+      if (b.endAt > now) throw AppError.unprocessable(ErrorCode.BOOKING_POLICY_VIOLATION, 'A session can be marked completed only after it has ended');
+      await this.transition(tx, b, 'COMPLETED', { actorId: actor.id, reason: `Marked completed by ${actor.role.toLowerCase()}`, data: { completedAt: now } });
+      await this.earnings.recordSessionEarning(tx, b.id);
+      await this.audit.record({ actorId: actor.id, actorRole: actor.role, action: 'booking.completed', entityType: 'Booking', entityId: b.id }, tx);
+    });
+    this.metrics.bookingEvents.inc({ event: 'completed' });
+    return this.view(actor, bookingId);
   }
 
   // ---- Queries ----

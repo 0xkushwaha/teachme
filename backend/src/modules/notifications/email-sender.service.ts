@@ -53,6 +53,15 @@ export class EmailSenderService {
     }
   }
 
+  /**
+   * Sends a template to an address that has no account yet (teacher invitations). There is no
+   * Notification row; the caller tracks delivery and retries via the outbox.
+   */
+  async sendDirect(to: string, templateKey: string, context: Record<string, unknown>, idempotencyKey: string) {
+    const rendered = await this.renderEmail(templateKey, context);
+    return this.provider.send({ to, subject: rendered.subject, html: rendered.html, text: rendered.text, idempotencyKey });
+  }
+
   async renderEmail(templateKey: string, context: Record<string, unknown>) {
     const stored = await this.prisma.notificationTemplate.findUnique({ where: { key: templateKey } });
     const def = TEMPLATE_BY_KEY.get(templateKey);

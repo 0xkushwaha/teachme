@@ -97,6 +97,13 @@ Configure SPF, DKIM and DMARC for the sending domain with your provider, and mov
 - Each logical message has a unique `dedupeKey`, so job retries and outbox replays cannot send duplicates.
 - Templates (HTML + plain text) are editable in Admin › Notification templates; variables are HTML-escaped.
 
+### Templates
+`verify_email`, `password_reset`, `booking_confirmed`, `teacher_new_booking`, `booking_cancelled`, `booking_rescheduled`, `meet_ready`, `session_reminder`, `payment_failed`, `payment_conflict`, `refund_update`, `teacher_approval` (approved / rejected **with reason** / suspended), `calendar_reconnect`, `admin_alert`, and (session 4) `teacher_invitation`, `teacher_welcome` (registration confirmation), `teacher_application_submitted`, `admin_teacher_application`, `payout_update`.
+
+**Teacher invitations** are sent to an address that has no account yet, so they bypass the per-user `Notification` table: the `teacher.invited` outbox event renders `teacher_invitation` and sends it directly. A failed send is retried by the outbox with backoff (permanent 5xx rejections stop retrying); the result is recorded on the invitation (`deliveredAt` / `lastDeliveryError`) and shown in Admin › Teachers › Invitations. A resend rotates the token, and events carrying a superseded token are skipped, so only the newest link is ever emailed. The raw token is scrubbed from the outbox row after dispatch.
+
+Verified locally on 1 Nov 2026 against Mailpit over real SMTP: invitation, welcome, application-received, admin "new application" and approval emails all delivered.
+
 ---
 
 ## Reminders

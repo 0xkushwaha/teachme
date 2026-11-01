@@ -16,6 +16,8 @@ import { BOOKING_INCLUDE, toBookingView } from '../bookings/booking.mapper';
 import { referencedVariables } from '../notifications/template-renderer';
 import { TEMPLATE_BY_KEY, TEMPLATE_DEFAULTS } from '../notifications/templates/defaults';
 import { EmailSenderService } from '../notifications/email-sender.service';
+import { SettingsService } from '../../services/settings.service';
+import { UsersService } from '../users/users.service';
 import {
   AdminBookingsQuery,
   AdminJobsQuery,
@@ -26,6 +28,18 @@ import {
   TicketsQuery,
   UpdateTemplateDto,
 } from './dto/admin.dto';
+
+function bookingSearch(term: string): Prisma.BookingWhereInput[] {
+  const t = term.trim();
+  const conditions: Prisma.BookingWhereInput[] = [
+    { student: { fullName: { contains: t, mode: 'insensitive' } } },
+    { student: { email: { contains: t.toLowerCase() } } },
+    { teacher: { user: { fullName: { contains: t, mode: 'insensitive' } } } },
+    { subject: { name: { contains: t, mode: 'insensitive' } } },
+  ];
+  if (/^[0-9a-f-]{36}$/i.test(t)) conditions.push({ id: t.toLowerCase() });
+  return conditions;
+}
 
 const SAMPLE_CONTEXT = {
   user: { name: 'Aanya' },
@@ -39,8 +53,11 @@ const SAMPLE_CONTEXT = {
   cancel: { by: 'the student', reason: 'Exam clash' },
   refund: { amount: '₹1,073.50', status: 'processed', note: 'Refunds usually reach your account in 5-7 working days.', text: 'A refund of ₹1,073.50 has been initiated.' },
   reminder: { when: 'in 1 hour' },
-  approval: { status: 'approved', message: 'Welcome aboard! Students can now discover and book you.' },
+  approval: { status: 'approved', message: 'Welcome aboard! Students can now discover and book you.', reason: '' },
   dashboard: { url: 'https://teachme.example/teacher' },
+  invite: { link: 'https://teachme.example/invite?token=sample', email: 'new.teacher@example.com', expires: 'Sat, 8 Nov 2026, 5:30 PM IST' },
+  teacher: { name: 'Meera Iyer', email: 'meera@example.com', documents: 2 },
+  payout: { amount: '₹12,400', status: 'paid', reference: 'NEFT-UTR-123456', reason: '' },
   alert: { title: 'Refund failed', detail: 'Refund abc failed: insufficient balance' },
   admin: { url: 'https://teachme.example/admin/integrations' },
   prefsUrl: 'https://teachme.example/student/settings',
@@ -55,6 +72,8 @@ export class AdminService {
     private readonly jobs: JobQueueService,
     private readonly config: AppConfig,
     private readonly emailSender: EmailSenderService,
+    private readonly settings: SettingsService,
+    private readonly accounts: UsersService,
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
     @Inject(CALENDAR_GATEWAY) private readonly calendar: CalendarGateway,
     @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
@@ -110,22 +129,58 @@ export class AdminService {
     return { id: userId, role };
   }
 
+  /** Profile, activity and recent security events for one account. */
+  async userDetail(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, email: true, fullName: true, role: true, status: true, phone: true, timezone: true, emailVerifiedAt: true, lastLoginAt: true, createdAt: true, deletedAt: true,
+        lockedUntil: true, failedLoginCount: true,
+        studentProfile: { select: { gradeLevel: true, learningGoals: true, preferredLanguage: true } },
+        teacherProfile: { select: { id: true, slug: true, approvalStatus: true } },
+      },
+    });
+    if (!user) throw AppError.notFound('User');
+    const now = new Date();
+    const [bookings, spent, activeSessions, activity, tickets] = await Promise.all([
+      this.prisma.booking.groupBy({ by: ['status'], where: { studentId: userId }, _count: { _all: true } }),
+      this.prisma.payment.aggregate({ where: { booking: { studentId: userId }, status: { in: ['CAPTURED', 'PARTIALLY_REFUNDED', 'REFUNDED'] } }, _sum: { amountMinor: true, refundedMinor: true } }),
+      this.prisma.session.count({ where: { userId, revokedAt: null, expiresAt: { gt: now } } }),
+      this.prisma.auditLog.findMany({
+        where: { OR: [{ actorId: userId }, { entityType: 'User', entityId: userId }] },
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+        select: { id: true, action: true, entityType: true, entityId: true, ip: true, createdAt: true, actor: { select: { fullName: true } } },
+      }),
+      this.prisma.supportTicket.count({ where: { userId } }),
+    ]);
+    return {
+      user,
+      bookings: Object.fromEntries(bookings.map((b) => [b.status, b._count._all])),
+      paidMinor: (spent._sum.amountMinor ?? 0) - (spent._sum.refundedMinor ?? 0),
+      activeSessions,
+      supportTickets: tickets,
+      activity,
+    };
+  }
+
   // ---------- Teachers ----------
   async teachers(q: AdminTeachersQuery) {
     const where: Prisma.TeacherProfileWhereInput = {
       user: { status: { not: 'DELETED' }, ...(q.q ? { OR: [{ fullName: { contains: q.q, mode: 'insensitive' } }, { email: { contains: q.q.toLowerCase() } }] } : {}) },
       ...(q.approvalStatus ? { approvalStatus: q.approvalStatus } : {}),
+      ...(q.stage === 'submitted' ? { applicationSubmittedAt: { not: null } } : q.stage === 'draft' ? { applicationSubmittedAt: null } : {}),
     };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.teacherProfile.findMany({
         where,
-        orderBy: [{ approvalStatus: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ approvalStatus: 'asc' }, { applicationSubmittedAt: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         skip: q.skip,
         take: q.pageSize,
         include: {
           user: { select: { id: true, email: true, fullName: true, status: true, emailVerifiedAt: true } },
           subjects: { include: { subject: { select: { name: true } } } },
-          _count: { select: { bookings: true, availability: true } },
+          _count: { select: { bookings: true, availability: true, documents: true } },
         },
       }),
       this.prisma.teacherProfile.count({ where }),
@@ -133,20 +188,64 @@ export class AdminService {
     return paginate(rows, total, q);
   }
 
+  /**
+   * Approval state changes. A first approval (from PENDING/REJECTED) reviews a *submitted*
+   * application with a complete profile; rejections must carry a reason the teacher will see.
+   * Teachers cannot reach this endpoint, so they can never change their own status.
+   */
   async setTeacherApproval(admin: AuthUser, teacherId: string, status: 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'PENDING', note?: string) {
-    const t = await this.prisma.teacherProfile.findUnique({ where: { id: teacherId }, include: { _count: { select: { subjects: true } } } });
+    const t = await this.prisma.teacherProfile.findUnique({
+      where: { id: teacherId },
+      include: { user: { select: { id: true } }, _count: { select: { subjects: { where: { isActive: true } }, documents: true } } },
+    });
     if (!t) throw AppError.notFound('Teacher');
-    if (status === 'APPROVED' && (t.headline.length < 10 || t.bio.length < 50 || t._count.subjects === 0))
-      throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'Profile is incomplete: needs a headline, bio and at least one subject');
+    if (t.userId === admin.id) throw AppError.forbidden('You cannot review your own teacher profile');
+    if (t.approvalStatus === status) throw AppError.unprocessable(ErrorCode.CONFLICT, `This teacher is already ${status.toLowerCase()}`);
+    if (status === 'APPROVED') {
+      if (t.headline.length < 10 || t.bio.length < 50 || t._count.subjects === 0)
+        throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'Profile is incomplete: needs a headline, bio and at least one subject');
+      if ((t.approvalStatus === 'PENDING' || t.approvalStatus === 'REJECTED') && !t.applicationSubmittedAt)
+        throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'The teacher has not submitted their application yet');
+      const { requireDocuments } = await this.settings.get('onboarding.rules');
+      if (requireDocuments && t.approvalStatus !== 'SUSPENDED' && t._count.documents === 0)
+        throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'No qualification documents have been uploaded');
+    }
+    const reason = note?.trim() || null;
+    if (status === 'REJECTED' && (!reason || reason.length < 5))
+      throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'Give the teacher a reason for the rejection (at least 5 characters)');
     await this.prisma.$transaction(async (tx) => {
-      await tx.teacherProfile.update({
-        where: { id: teacherId },
-        data: { approvalStatus: status, ...(status === 'APPROVED' ? { approvedAt: new Date(), approvedById: admin.id } : {}) },
+      const res = await tx.teacherProfile.updateMany({
+        where: { id: teacherId, approvalStatus: t.approvalStatus },
+        data: {
+          approvalStatus: status,
+          ...(status === 'APPROVED' ? { approvedAt: new Date(), approvedById: admin.id, rejectionReason: null } : {}),
+          ...(status === 'REJECTED' ? { rejectionReason: reason } : {}),
+        },
       });
-      await this.outbox.publish(tx, { type: 'teacher.approval_changed', aggregateId: teacherId, payload: { teacherId, status } });
-      await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.teacher_approval_changed', entityType: 'TeacherProfile', entityId: teacherId, metadata: { from: t.approvalStatus, to: status, note: note ?? null } }, tx);
+      if (res.count !== 1) throw AppError.conflict(ErrorCode.CONFLICT, 'This teacher was updated by someone else; refresh and try again');
+      await this.outbox.publish(tx, { type: 'teacher.approval_changed', aggregateId: teacherId, payload: { teacherId, status, reason: status === 'REJECTED' ? reason : null } });
+      await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.teacher_approval_changed', entityType: 'TeacherProfile', entityId: teacherId, metadata: { from: t.approvalStatus, to: status, note: reason } }, tx);
     });
     return { id: teacherId, approvalStatus: status };
+  }
+
+  /**
+   * Permanently removes an account's personal data (same erasure as self-service deletion) after
+   * the admin re-types the account's email. Booking, payment and earnings records are retained.
+   */
+  async removeUser(admin: AuthUser, userId: string, confirmEmail: string, reason: string) {
+    if (userId === admin.id) throw AppError.forbidden('You cannot remove your own account');
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { teacherProfile: { select: { id: true } } } });
+    if (!user || user.status === 'DELETED') throw AppError.notFound('User');
+    if (user.role === 'ADMIN') throw AppError.forbidden('Demote this administrator before removing the account');
+    if (confirmEmail.trim().toLowerCase() !== user.email.toLowerCase())
+      throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'The confirmation email does not match this account');
+    if (user.teacherProfile) {
+      const open = await this.prisma.teacherPayout.count({ where: { teacherId: user.teacherProfile.id, status: { in: ['REQUESTED', 'APPROVED'] } } });
+      if (open) throw AppError.unprocessable(ErrorCode.CONFLICT, 'Settle or reject the open payout before removing this teacher');
+    }
+    await this.accounts.erase(userId, { actorId: admin.id, actorRole: 'ADMIN', reason });
+    return { id: userId, status: 'DELETED' };
   }
 
   // ---------- Bookings ----------
@@ -156,6 +255,7 @@ export class AdminService {
       ...(q.teacherId ? { teacherId: q.teacherId } : {}),
       ...(q.studentId ? { studentId: q.studentId } : {}),
       ...(q.from || q.to ? { startAt: { ...(q.from ? { gte: new Date(q.from) } : {}), ...(q.to ? { lt: new Date(q.to) } : {}) } } : {}),
+      ...(q.q ? { OR: bookingSearch(q.q) } : {}),
     };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.booking.findMany({ where, orderBy: { createdAt: 'desc' }, skip: q.skip, take: q.pageSize, include: BOOKING_INCLUDE }),

@@ -10,6 +10,8 @@ export class AdminUsersQuery extends PaginationQuery {
 
 export class AdminTeachersQuery extends PaginationQuery {
   @IsOptional() @IsIn(['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED']) approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+  /** For PENDING teachers: `submitted` = application awaiting review, `draft` = still completing it. */
+  @IsOptional() @IsIn(['submitted', 'draft']) stage?: 'submitted' | 'draft';
   @IsOptional() @IsString() @MaxLength(100) q?: string;
 }
 
@@ -27,8 +29,15 @@ export class TeacherApprovalDto {
   @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
 
+export class RemoveUserDto {
+  @IsString() @MaxLength(254) confirmEmail: string;
+  @IsString() @MinLength(5) @MaxLength(300) reason: string;
+}
+
 export class AdminBookingsQuery extends PaginationQuery {
   @IsOptional() @IsIn(['PENDING_PAYMENT', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'EXPIRED', 'PAYMENT_FAILED']) status?: string;
+  /** Free-text search over student/teacher name or email, or a booking id prefix. */
+  @IsOptional() @IsString() @MaxLength(100) q?: string;
   @IsOptional() @IsDateString() from?: string;
   @IsOptional() @IsDateString() to?: string;
   @IsOptional() @IsUUID() teacherId?: string;

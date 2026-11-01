@@ -11,7 +11,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, Avatar, Skeleton } from '@/components/ui/primitives';
 import { useAuth, useRequireRole } from '@/hooks/use-auth';
 import { errorMessage } from '@/lib/api';
-import { notificationService } from '@/services/account';
+import { announcementService, notificationService } from '@/services/account';
 import { authService } from '@/services/auth';
 import type { Role } from '@/types/api';
 import { cn } from '@/utils/cn';
@@ -30,6 +30,23 @@ export function DashboardShell({ role, nav, children }: { role: Role; nav: NavIt
   const [mobile, setMobile] = useState(false);
   const base = `/${role.toLowerCase()}`;
   const unread = useQuery({ queryKey: ['notifications', 'unread'], queryFn: notificationService.unreadCount, enabled: !!user, refetchInterval: 60_000 });
+  const announcements = useQuery({ queryKey: ['announcements'], queryFn: announcementService.active, enabled: !!user, staleTime: 5 * 60_000 });
+  const [dismissed, setDismissed] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('tm_dismissed_announcements') ?? '[]');
+    } catch {
+      return [];
+    }
+  });
+  const dismiss = (id: string) => {
+    const next = [...dismissed, id].slice(-50);
+    setDismissed(next);
+    try {
+      localStorage.setItem('tm_dismissed_announcements', JSON.stringify(next));
+    } catch {
+      /* storage unavailable: dismissal lasts for this page view only */
+    }
+  };
   const resend = useMutation({
     mutationFn: authService.resendVerification,
     onSuccess: () => toast.success('Verification email sent. Check your inbox.'),
@@ -150,11 +167,27 @@ export function DashboardShell({ role, nav, children }: { role: Role; nav: NavIt
               We sent a link to {user.email}. You need a verified email to book sessions.
             </Alert>
           )}
-          {role === 'TEACHER' && user.teacherProfile && user.teacherProfile.approvalStatus !== 'APPROVED' && (
-            <Alert tone={user.teacherProfile.approvalStatus === 'PENDING' ? 'info' : 'danger'} title={user.teacherProfile.approvalStatus === 'PENDING' ? 'Your profile is awaiting review' : `Your profile is ${user.teacherProfile.approvalStatus.toLowerCase()}`} className="mb-6">
-              {user.teacherProfile.approvalStatus === 'PENDING'
-                ? 'Complete your profile, subjects and availability. An administrator will review it before students can book you.'
-                : 'Students cannot see or book your profile. Contact support for details.'}
+          {(announcements.data ?? []).filter((a) => !dismissed.includes(a.id)).map((a) => (
+            <Alert
+              key={a.id}
+              tone="info"
+              title={a.title}
+              className="mb-4"
+              action={<button onClick={() => dismiss(a.id)} className="rounded-md p-1 text-muted-foreground hover:bg-muted" aria-label={`Dismiss announcement: ${a.title}`}><X className="size-4" /></button>}
+            >
+              <span className="whitespace-pre-line">{a.body}</span>
+            </Alert>
+          ))}
+          {role === 'TEACHER' && user.teacherProfile && user.teacherProfile.approvalStatus !== 'APPROVED' && !pathname.startsWith('/teacher/application') && (
+            <Alert
+              tone={user.teacherProfile.approvalStatus === 'SUSPENDED' ? 'danger' : 'info'}
+              title={user.teacherProfile.approvalStatus === 'PENDING' ? 'Finish and submit your application' : user.teacherProfile.approvalStatus === 'REJECTED' ? 'Your application needs changes' : 'Your profile is suspended'}
+              className="mb-6"
+              action={user.teacherProfile.approvalStatus !== 'SUSPENDED' ? <Link href="/teacher/application" className="text-sm font-medium underline underline-offset-4">Open application</Link> : undefined}
+            >
+              {user.teacherProfile.approvalStatus === 'SUSPENDED'
+                ? 'Students cannot see or book your profile. Contact support for details.'
+                : 'Students can book you once an administrator approves your application. Track its status and upload documents on the application page.'}
             </Alert>
           )}
           {children}

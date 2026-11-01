@@ -11,5 +11,8 @@ export const authService = {
   resendVerification: () => api<{ queued: boolean }>('/auth/resend-verification', { method: 'POST' }),
   forgotPassword: (email: string) => api<{ message: string }>('/auth/forgot-password', { method: 'POST', body: { email }, noRefresh: true }),
   resetPassword: (token: string, password: string) => api<{ reset: boolean }>('/auth/reset-password', { method: 'POST', body: { token, password }, noRefresh: true }),
+  inspectInvitation: (token: string) => api<{ email: string; expiresAt: string }>('/auth/invitations/inspect', { method: 'POST', body: { token }, noRefresh: true }),
+  acceptInvitation: (body: { token: string; fullName: string; password: string; timezone: string; acceptTerms: boolean }) =>
+    api<{ user: Me }>('/auth/invitations/accept', { method: 'POST', body, noRefresh: true }).then((r) => r.user),
   changePassword: (currentPassword: string, newPassword: string) => api('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 };

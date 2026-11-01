@@ -26,7 +26,12 @@
 | `POST /auth/register|login|token|refresh|logout|verify-email|forgot-password|reset-password`, `GET /auth/csrf` | ✓ (rate limited) | | | | token-bound |
 | `GET /auth/me`, `POST /auth/resend-verification|change-password`, `/users/me*`, `/notifications*` | | ✓ | ✓ | ✓ | self |
 | `/students/me*` | | ✓ | | | self |
-| `/teachers/me*`, `/availability/me*`, `/integrations/google/*` (except callback) | | | ✓ | | own profile |
+| `/teachers/me*` (incl. documents, avatar, application, earnings, payouts), `/availability/me*`, `/integrations/google/*` (except callback) | | | ✓ | | own profile — ids come from the session, never the URL; another teacher's document/payout id → 404 |
+| `POST /auth/invitations/inspect|accept` | ✓ (rate limited) | | | | hashed single-use token, compare-and-set claim |
+| `POST /bookings/:id/complete` | | | ✓ | | own confirmed booking, after its end |
+| `GET /students/me/payments*` | | ✓ | | | own payments (404 otherwise) |
+| `GET /announcements` | | ✓ | ✓ | ✓ | audience filtered by role |
+| `GET /files/avatars/:id` | ✓ | ✓ | ✓ | ✓ | `AVATAR` files only; documents are never public |
 | `GET /integrations/google/callback` | ✓ | | | | single-use state bound to Redis **and** browser cookie |
 | `POST /bookings` | | ✓ verified | | | server-side eligibility |
 | `GET /bookings`, `GET /bookings/teacher/calendar` | | ✓ own | ✓ own | | owner filter in query |
@@ -39,7 +44,18 @@
 | `GET /health/*` | ✓ | | | | no data |
 | `GET /metrics` | Bearer `METRICS_TOKEN`; blocked at ingress | | | | |
 
-This table is enforced by guards and covered by `test/integration/rbac-idempotency.spec.ts` and `test/unit/authorization.spec.ts`.
+This table is enforced by guards and covered by `test/integration/rbac-idempotency.spec.ts`, `test/integration/onboarding-earnings.spec.ts` and `test/unit/authorization.spec.ts`.
+
+### Teacher onboarding and role integrity
+- **No unauthorised teacher accounts:** open teacher sign-up is **off by default** (`features.flags.teacherRegistration = false`); the only other path is an admin invitation. Tokens are 256-bit random, stored as SHA-256, expire (`onboarding.rules.invitationTtlHours`, default 7 days), are rotated on resend (the old link dies) and are claimed with a compare-and-set in the same transaction that creates the account, so a link works once even under concurrent use. The account email comes from the invitation, not the form.
+- **No self-approval:** approval state is only writable through `POST /admin/teachers/:id/approval` (ADMIN). Teachers cannot send `approvalStatus` (rejected by `forbidNonWhitelisted`); an admin cannot review their own teacher profile; first approval requires a submitted application with documents; approval changes are compare-and-set and audited.
+- **Financial records:** earnings are computed server-side only; teachers can read their ledger and request a payout but cannot write amounts. The ledger is append-only at the database level (trigger). Payout state changes are compare-and-set, audited and notified; one open payout per teacher is enforced by a partial unique index plus a per-teacher advisory lock. The platform records manual bank transfers; it does not move money.
+
+### File uploads
+- Accepted only from authenticated teachers, after auth/CSRF/rate-limit guards and inside hard multer limits (1 file, small field count, 5 MB documents / 2 MB photos; oversize → 413).
+- Type is decided by **magic bytes**, never by filename or client MIME type; only PDF, PNG, JPEG, WebP. Images containing HTML/SVG/script markers are rejected (polyglots). Stored file names are sanitised (no paths/control characters).
+- Bytes live in PostgreSQL (no filesystem paths, no path traversal). Documents are served only to the owning teacher and admins (admin views are audited), always as attachments with `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; sandbox`. Avatars are the only public files.
+- Erasure (self-service or admin removal) deletes all of the user's stored files.
 
 ## Rate limiting and abuse prevention
 Redis-backed (shared across replicas), keyed per user when signed in, otherwise per client IP (`TRUST_PROXY` must match the number of proxy hops so spoofed `X-Forwarded-For` is ignored):
@@ -73,5 +89,5 @@ Redis-backed (shared across replicas), keyed per user when signed in, otherwise 
 
 ## Known gaps (before public launch)
 - No multi-factor authentication for admins (recommended: TOTP or SSO for the admin role).
-- No malware scanning because the platform accepts no file uploads; revisit if uploads are added.
+- Uploaded documents are not malware-scanned (type-sniffed, size-limited, never executed or rendered inline). Add ClamAV or a provider scan before accepting uploads at scale.
 - Legal pages are a solid starting draft but must be reviewed by counsel for your jurisdiction (India DPDP Act 2023, GST invoicing obligations, consumer protection rules).

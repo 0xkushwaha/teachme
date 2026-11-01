@@ -7,7 +7,7 @@ frontend/        Next.js 15 app (UI only; talks to the API over /api/v1)
 backend/         NestJS API + background worker, Prisma/PostgreSQL, BullMQ/Redis
 infrastructure/  docker-compose (local), deployment (nginx, prod compose), monitoring (Prometheus + alerts)
 loadtest/        k6 scenarios          scripts/  run-loadtest.sh
-docs/            architecture · api · database · security · deployment · integrations · operations-runbook · load-testing · implementation-status
+docs/            architecture · api · database · security · deployment · integrations · operations-runbook · load-testing · implementation-status · upgrade-audit
 ```
 
 ## Stack
@@ -22,6 +22,8 @@ Key design points (details in [docs/architecture.md](docs/architecture.md)):
 - **No double bookings, by construction:** PostgreSQL exclusion constraints over time ranges (including teacher buffer), short-lived checkout holds, compare-and-set state transitions, idempotency keys.
 - **A payment confirms a booking only after server-side verification** (signature + fetch from Razorpay + amount/currency/order checks). Webhooks, the checkout callback and a reconciler share one idempotent settlement path; late payments for a lost slot are refunded automatically.
 - **Reliable side effects:** transactional outbox → BullMQ jobs with retries, dedupe keys, durable reminders with a repair sweeper, and an ops view to retry anything that failed.
+- **Three separated roles, enforced on the server:** students book and pay; teachers manage availability, bookings, earnings and payouts; admins run approvals, finance and operations. Teachers join **by invitation** (single-use, expiring, hashed tokens), submit an application with qualification documents, and go live only after admin approval.
+- **Trustworthy money:** an append-only earnings ledger (database trigger) written in the same transaction that completes a session; manual payouts with one open request per teacher; finance summary and CSV export.
 
 ## Local development
 
@@ -57,6 +59,8 @@ All seeded accounts share the password defined in `backend/prisma/seed.ts` (`SEE
 | Students | `aanya.student@teachme.dev`, `dev.student@teachme.dev`, `maya.student@teachme.dev` |
 | Teachers | `meera.iyer@teachme.dev`, `arjun.mehta@teachme.dev`, … (see seed) |
 | Teacher awaiting approval | `pending.teacher@teachme.dev` |
+
+Teacher accounts are invite-only by default: sign in as the admin, open **Teachers → Invite teacher**, and open the link from the email in Mailpit (<http://localhost:8025>). To allow open teacher sign-up instead, enable `features.flags.teacherRegistration` in **System settings**.
 
 Without Razorpay/Google credentials the app runs fully, but **Pay** reports that payments aren’t configured and Meet links show “not available” — nothing is faked. Configure them with [docs/integrations.md](docs/integrations.md).
 

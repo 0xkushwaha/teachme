@@ -21,7 +21,11 @@ export type DomainEvent =
   | { type: 'payment.conflict'; aggregateId: string; payload: { bookingId: string; paymentId: string } }
   | { type: 'refund.requested'; aggregateId: string; payload: { refundId: string } }
   | { type: 'refund.updated'; aggregateId: string; payload: { refundId: string } }
-  | { type: 'teacher.approval_changed'; aggregateId: string; payload: { teacherId: string; status: string } }
+  | { type: 'teacher.approval_changed'; aggregateId: string; payload: { teacherId: string; status: string; reason?: string | null } }
+  | { type: 'teacher.invited'; aggregateId: string; payload: { invitationId: string; token: string } }
+  | { type: 'teacher.registered'; aggregateId: string; payload: { teacherId: string } }
+  | { type: 'teacher.application_submitted'; aggregateId: string; payload: { teacherId: string } }
+  | { type: 'payout.updated'; aggregateId: string; payload: { payoutId: string; status: string } }
   | { type: 'admin.alert'; aggregateId: string; payload: { title: string; detail: string } };
 
 export type DomainEventType = DomainEvent['type'];

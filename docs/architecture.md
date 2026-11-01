@@ -44,7 +44,11 @@ The domain (bookings ↔ payments ↔ calendar ↔ notifications) is tightly tra
 | `payments` | Razorpay orders, signature verification, webhook ingestion, settlement, refunds, reconciliation |
 | `calendar`, `meetings` | Google OAuth connection, event sync, Meet conference lifecycle, retries |
 | `notifications` | Templates, preferences, in-app inbox, email delivery, reminder scheduling |
-| `admin`, `analytics`, `support` | Operations dashboards and actions (all audited) |
+| `admin`, `analytics`, `support` | Operations dashboards and actions (all audited); finance summary/CSV and payout queue |
+| `onboarding` | Teacher invitations (issue, resend, revoke, accept), application submission, document and photo upload, admin document review |
+| `files` | Content-sniffed upload validation, Postgres-backed storage, safe file responses, public avatar route |
+| `earnings` | Append-only earnings ledger (written on completion), teacher summaries/series, manual payout lifecycle, platform finance |
+| `announcements` | Role-targeted dashboard notices |
 
 Cross-cutting: `common/` (guards, errors, idempotency interceptor), `services/` (Redis, settings, audit, outbox, metrics), `integrations/` (provider adapters behind interfaces), `jobs/` (queues, outbox dispatcher, processors).
 

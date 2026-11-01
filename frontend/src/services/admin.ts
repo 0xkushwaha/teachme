@@ -14,6 +14,52 @@ export interface AdminOverview {
   ops: { failedJobs: number; openDiscrepancies: number; openTickets: number };
 }
 
+export interface Invitation {
+  id: string;
+  email: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  expiresAt: string;
+  note: string | null;
+  sendCount: number;
+  lastSentAt: string;
+  deliveredAt: string | null;
+  lastDeliveryError: string | null;
+  acceptedAt: string | null;
+  acceptedUserId: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export interface FinanceSummary {
+  range: { from: string; to: string };
+  collectedMinor: number;
+  payments: number;
+  refundedMinor: number;
+  refunds: number;
+  netCollectedMinor: number;
+  platformFeeMinor: number;
+  taxMinor: number;
+  teacherEarningsMinor: number;
+  payoutsPaidMinor: number;
+  payoutsPaid: number;
+  outstandingTeacherBalanceMinor: number;
+  openPayouts: { count: number; amountMinor: number };
+  topTeachers: { teacherId: string; name: string; earnedMinor: number; sessions: number }[];
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  audience: 'ALL' | 'STUDENT' | 'TEACHER';
+  startsAt: string;
+  endsAt: string | null;
+  archivedAt?: string | null;
+  createdAt?: string;
+}
+
+export type AnnouncementInput = { title: string; body: string; audience: Announcement['audience']; startsAt?: string; endsAt?: string | null };
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const adminService = {
   overview: (days = 30) => api<AdminOverview>('/admin/overview', { query: { days } }),
@@ -46,6 +92,28 @@ export const adminService = {
   audit: (q: Q) => api<Paginated<any>>('/admin/audit-logs', { query: q }),
   settings: () => api<{ key: string; description: string; value: any }[]>('/admin/settings'),
   setSetting: (key: string, value: unknown) => api(`/admin/settings/${key}`, { method: 'PUT', body: { value } }),
+  userDetail: (id: string) => api<any>(`/admin/users/${id}`),
+  removeUser: (id: string, confirmEmail: string, reason: string) => api(`/admin/users/${id}/remove`, { method: 'POST', body: { confirmEmail, reason } }),
+  teacher: (id: string) => api<any>(`/admin/teachers/${id}`),
+  teacherDocumentUrl: (teacherId: string, docId: string) => `/api/v1/admin/teachers/${teacherId}/documents/${docId}/file`,
+  reviewDocument: (teacherId: string, docId: string, status: 'VERIFIED' | 'REJECTED', note?: string) =>
+    api(`/admin/teachers/${teacherId}/documents/${docId}/review`, { method: 'POST', body: { status, note } }),
+  teacherEarnings: (id: string, page = 1) => api<any>(`/admin/teachers/${id}/earnings`, { query: { page, pageSize: 10 } }),
+  addAdjustment: (id: string, amountMinor: number, description: string) => api(`/admin/teachers/${id}/earnings/adjustments`, { method: 'POST', body: { amountMinor, description } }),
+  invitations: (q: Q) => api<Paginated<Invitation>>('/admin/invitations', { query: q }),
+  invite: (email: string, note?: string) => api<Invitation>('/admin/invitations', { method: 'POST', body: { email, note } }),
+  resendInvitation: (id: string) => api<Invitation>(`/admin/invitations/${id}/resend`, { method: 'POST' }),
+  revokeInvitation: (id: string) => api<Invitation>(`/admin/invitations/${id}/revoke`, { method: 'POST' }),
+  payouts: (q: Q) => api<Paginated<any> & { totals: { status: string; count: number; amountMinor: number }[] }>('/admin/payouts', { query: q }),
+  approvePayout: (id: string, note?: string) => api(`/admin/payouts/${id}/approve`, { method: 'POST', body: { note } }),
+  markPayoutPaid: (id: string, reference: string, note?: string) => api(`/admin/payouts/${id}/paid`, { method: 'POST', body: { reference, note } }),
+  rejectPayout: (id: string, reason: string) => api(`/admin/payouts/${id}/reject`, { method: 'POST', body: { reason } }),
+  finance: (from: string, to: string) => api<FinanceSummary>('/admin/finance/summary', { query: { from, to } }),
+  financeCsvUrl: (from: string, to: string) => `/api/v1/admin/finance/report.csv?${new URLSearchParams({ from, to })}`,
+  announcements: (q: Q) => api<Paginated<Announcement>>('/admin/announcements', { query: q }),
+  createAnnouncement: (body: AnnouncementInput) => api<Announcement>('/admin/announcements', { method: 'POST', body }),
+  updateAnnouncement: (id: string, body: AnnouncementInput) => api<Announcement>(`/admin/announcements/${id}`, { method: 'PATCH', body }),
+  archiveAnnouncement: (id: string) => api(`/admin/announcements/${id}/archive`, { method: 'POST' }),
   tickets: (q: Q) => api<Paginated<any>>('/admin/support-tickets', { query: q }),
   updateTicket: (id: string, status: string, adminNote?: string) => api(`/admin/support-tickets/${id}`, { method: 'PATCH', body: { status, adminNote } }),
 };
