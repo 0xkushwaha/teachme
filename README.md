@@ -74,13 +74,15 @@ Without Razorpay/Google credentials the app runs fully, but **Pay** reports that
 # Backend (needs the docker compose stack)
 cd backend
 npm run lint && npm run typecheck
-npm test                     # unit: slot engine/timezones/DST, money, state machine, policies, signatures, authz, templates
-npm run test:integration     # real Postgres + Redis: concurrency, payments/webhooks, refunds, calendar/Meet, notifications, RBAC
+npm test                     # unit: slot engine/timezones/DST, money & teacher earnings, state machine, policies, signatures, authz, templates, file-type sniffing, CSV export
+npm run test:integration     # real Postgres + Redis: concurrency, payments/webhooks, refunds, calendar/Meet, notifications, RBAC,
+                             # teacher invitations, uploads, approval/rejection, earnings ledger, payouts, receipts, finance
                              # (uses its own teachme_test database; provider HTTP calls are faked, HMAC checks are real)
 # Frontend
 cd frontend
 npm run lint && npm run typecheck && npm run build
-npm run test:e2e             # Playwright: starts an isolated stack (:4100/:3100, teachme_e2e DB, real SMTP→Mailpit)
+npm run test:e2e             # Playwright: starts an isolated stack (:4100/:3100, teachme_e2e DB, real SMTP→Mailpit);
+                             # covers the student booking journey and the teacher invitation journey
 ```
 Latest results are recorded in [docs/implementation-status.md](docs/implementation-status.md); load-test results in [docs/load-testing.md](docs/load-testing.md).
 

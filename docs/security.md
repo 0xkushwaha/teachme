@@ -85,7 +85,7 @@ Redis-backed (shared across replicas), keyed per user when signed in, otherwise 
 - Production boot validation refuses `COOKIE_SECURE=false` and a missing `METRICS_TOKEN`.
 
 ## Dependency hygiene
-`npm audit --omit=dev --audit-level=high` runs in CI for both apps (both currently report **0 vulnerabilities**); Dependabot opens weekly update PRs. Versions are pinned exactly (`save-exact`) with lockfiles. Transitive fixes are pinned with npm `overrides` — backend: `multer` 2.5.0, `deepmerge-ts` 8.0.2, `js-yaml` 5.5.0; frontend: `postcss` 8.5.31 — remove each once the parent package ships the fix.
+`npm audit --omit=dev --audit-level=high` runs in CI for both apps (both currently report **0 vulnerabilities**); Dependabot opens weekly update PRs. Versions are pinned exactly (`save-exact`) with lockfiles. Transitive fixes are pinned with npm `overrides` — backend: `multer` 2.5.0, `deepmerge-ts` 8.0.2, `js-yaml` 5.5.0, and `glob` 14.0.3 scoped to `gaxios › rimraf` (gaxios 7 declares rimraf but never loads it; remove once `googleapis-common` moves to gaxios 8, which drops rimraf); frontend: `postcss` 8.5.31 — remove each once the parent package ships the fix.
 
 ## Known gaps (before public launch)
 - No multi-factor authentication for admins (recommended: TOTP or SSO for the admin role).

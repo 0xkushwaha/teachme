@@ -1,6 +1,6 @@
 # Implementation status
 
-_Last updated: 2026-10-24 (session 3)_
+_Last updated: 2026-11-01 (session 4)_
 
 ## Done and verified
 
@@ -68,7 +68,7 @@ Audit first ([upgrade-audit.md](upgrade-audit.md)), then extended the existing a
 
 Bugs found and fixed this session: teacher overview over-reported earnings (included unearned future sessions); production nginx would have rejected every upload (256 KB body limit); integration suite could hit per-IP route limits from a previous run (now simulates distinct clients behind one trusted proxy hop, as in production).
 
-Tests after session 4: backend unit **79/79** (10 new), integration **65/65** (16 new: invitations incl. 6-way acceptance race, uploads/polyglots/oversize, application approve/reject/resubmit, document access control, avatar serving, completion race → exactly one earning, ledger immutability, 4-way payout race → exactly one, payout lifecycle, receipts, finance CSV, account removal, announcements); lint/typecheck/build clean for both apps; E2E **16/16** (4 new: admin invites from the UI → email via Mailpit → teacher accepts → lands on application → link cannot be reused → teacher refused by admin API). Verified live in the browser against the running stack with real SMTP → Mailpit (invitation, welcome, application received, admin alert, approval). `docs/openapi.json` re-exported (85 → 122 paths).
+Tests after session 4: backend unit **79/79** (10 new), integration **65/65** (16 new: invitations incl. 6-way acceptance race, uploads/polyglots/oversize, application approve/reject/resubmit, document access control, avatar serving, completion race → exactly one earning, ledger immutability, 4-way payout race → exactly one, payout lifecycle, receipts, finance CSV, account removal, announcements); lint/typecheck/build clean for both apps; E2E **16/16** (4 new: admin invites from the UI → email via Mailpit → teacher accepts → lands on application → link cannot be reused → teacher refused by admin API). Verified live in the browser against the running stack with real SMTP → Mailpit (invitation, welcome, application received, admin alert, approval). `docs/openapi.json` re-exported (85 → 122 paths). After the PR opened, newly published advisories failed CI's backend audit: `follow-redirects` 1.16.1 → 1.16.2 (high) via lockfile, and a scoped `glob` override for the unused `gaxios › rimraf` path (moderate); `npm audit --omit=dev` back to **0 vulnerabilities**.
 
 Load test (stepped 100/500/1,000/2,000 concurrent users, one laptop, one API process): **0 errors in 148,104 requests** at every tier; p95 30 / 21 / 144 / 356 ms; p99 at 1,000–2,000 users 0.7–0.9 s and reservation p95 1.6–2.0 s — PostgreSQL CPU is the bottleneck. Supports ~500 concurrent users comfortably on this hardware; 2,000 is *not* demonstrated at production quality. Details and next steps: [load-testing.md](load-testing.md).
 
