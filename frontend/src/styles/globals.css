@@ -1,74 +1,90 @@
 @import "tailwindcss";
 
-/* Design tokens. One accent (indigo-violet), restrained neutrals, light + dark. */
+/*
+ * Design tokens — "Academic green" palette.
+ * Cream canvas, deep forest green as the primary, sage tints for soft surfaces,
+ * and peach/orange as the secondary highlight. Light + dark.
+ */
 :root {
-  --background: oklch(0.99 0.002 270);
-  --foreground: oklch(0.21 0.02 270);
-  --surface: oklch(1 0 0);
-  --surface-2: oklch(0.975 0.004 270);
-  --muted: oklch(0.955 0.006 270);
-  --muted-foreground: oklch(0.52 0.02 270);
-  --border: oklch(0.92 0.008 270);
-  --border-strong: oklch(0.86 0.012 270);
-  --accent: oklch(0.55 0.21 275);
-  --accent-hover: oklch(0.5 0.21 275);
-  --accent-soft: oklch(0.95 0.035 275);
-  --accent-foreground: oklch(0.99 0 0);
-  --success: oklch(0.6 0.14 155);
-  --success-soft: oklch(0.95 0.04 155);
-  --warning: oklch(0.7 0.15 70);
-  --warning-soft: oklch(0.96 0.05 80);
-  --danger: oklch(0.58 0.2 25);
-  --danger-soft: oklch(0.96 0.03 25);
-  --ring: oklch(0.55 0.21 275 / 0.45);
-  --shadow-color: 270 30% 20%;
+  --background: #fdf9f2;
+  --foreground: #17301e;
+  --surface: #fffdf9;
+  --surface-2: #f8f3ea;
+  --muted: #eef4e6;
+  --muted-foreground: #5b6b5e;
+  --border: #e7e1d3;
+  --border-strong: #d2cab8;
+  --accent: #2d5e2a;
+  --accent-hover: #234c21;
+  --accent-soft: #e3efd5;
+  --accent-foreground: #ffffff;
+  --secondary: #f29b63;
+  --secondary-hover: #e0854c;
+  --secondary-soft: #fde6d4;
+  --secondary-foreground: #7a3b14;
+  --success: #3e8e47;
+  --success-soft: #e3f1df;
+  --warning: #e09a3e;
+  --warning-soft: #fbebd5;
+  --danger: #c2553a;
+  --danger-soft: #f8e0d9;
+  --ring: rgb(45 94 42 / 0.4);
+  --shadow-color: 110 30% 15%;
 }
 
 :root[data-theme="dark"] {
-  --background: oklch(0.16 0.012 270);
-  --foreground: oklch(0.95 0.006 270);
-  --surface: oklch(0.2 0.014 270);
-  --surface-2: oklch(0.225 0.015 270);
-  --muted: oklch(0.26 0.016 270);
-  --muted-foreground: oklch(0.7 0.016 270);
-  --border: oklch(0.29 0.016 270);
-  --border-strong: oklch(0.36 0.02 270);
-  --accent: oklch(0.68 0.17 278);
-  --accent-hover: oklch(0.73 0.16 278);
-  --accent-soft: oklch(0.3 0.07 278);
-  --accent-foreground: oklch(0.16 0.012 270);
-  --success: oklch(0.72 0.14 155);
-  --success-soft: oklch(0.3 0.05 155);
-  --warning: oklch(0.8 0.14 80);
-  --warning-soft: oklch(0.32 0.05 80);
-  --danger: oklch(0.7 0.17 25);
-  --danger-soft: oklch(0.32 0.06 25);
-  --ring: oklch(0.68 0.17 278 / 0.5);
-  --shadow-color: 270 40% 2%;
+  --background: #0f1a12;
+  --foreground: #eef3e8;
+  --surface: #162418;
+  --surface-2: #1b2c1f;
+  --muted: #22352a;
+  --muted-foreground: #a7b6a5;
+  --border: #2a3d2e;
+  --border-strong: #3b5340;
+  --accent: #8cc97a;
+  --accent-hover: #a2d98f;
+  --accent-soft: #243d2a;
+  --accent-foreground: #0f1a12;
+  --secondary: #f5a76f;
+  --secondary-hover: #f9bb8c;
+  --secondary-soft: #3d2a1e;
+  --secondary-foreground: #fbd6bb;
+  --success: #7cc77a;
+  --success-soft: #22372a;
+  --warning: #e9b26a;
+  --warning-soft: #3a2d1a;
+  --danger: #e8806a;
+  --danger-soft: #3a211b;
+  --ring: rgb(140 201 122 / 0.5);
+  --shadow-color: 120 40% 2%;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --background: oklch(0.16 0.012 270);
-    --foreground: oklch(0.95 0.006 270);
-    --surface: oklch(0.2 0.014 270);
-    --surface-2: oklch(0.225 0.015 270);
-    --muted: oklch(0.26 0.016 270);
-    --muted-foreground: oklch(0.7 0.016 270);
-    --border: oklch(0.29 0.016 270);
-    --border-strong: oklch(0.36 0.02 270);
-    --accent: oklch(0.68 0.17 278);
-    --accent-hover: oklch(0.73 0.16 278);
-    --accent-soft: oklch(0.3 0.07 278);
-    --accent-foreground: oklch(0.16 0.012 270);
-    --success: oklch(0.72 0.14 155);
-    --success-soft: oklch(0.3 0.05 155);
-    --warning: oklch(0.8 0.14 80);
-    --warning-soft: oklch(0.32 0.05 80);
-    --danger: oklch(0.7 0.17 25);
-    --danger-soft: oklch(0.32 0.06 25);
-    --ring: oklch(0.68 0.17 278 / 0.5);
-    --shadow-color: 270 40% 2%;
+    --background: #0f1a12;
+    --foreground: #eef3e8;
+    --surface: #162418;
+    --surface-2: #1b2c1f;
+    --muted: #22352a;
+    --muted-foreground: #a7b6a5;
+    --border: #2a3d2e;
+    --border-strong: #3b5340;
+    --accent: #8cc97a;
+    --accent-hover: #a2d98f;
+    --accent-soft: #243d2a;
+    --accent-foreground: #0f1a12;
+    --secondary: #f5a76f;
+    --secondary-hover: #f9bb8c;
+    --secondary-soft: #3d2a1e;
+    --secondary-foreground: #fbd6bb;
+    --success: #7cc77a;
+    --success-soft: #22372a;
+    --warning: #e9b26a;
+    --warning-soft: #3a2d1a;
+    --danger: #e8806a;
+    --danger-soft: #3a211b;
+    --ring: rgb(140 201 122 / 0.5);
+    --shadow-color: 120 40% 2%;
   }
 }
 
@@ -85,6 +101,10 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
   --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -113,12 +133,12 @@
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
 }
 
-/* Subtle animated aurora used behind the hero; disabled for reduced motion. */
+/* Soft sage and peach glow behind the hero; disabled for reduced motion. */
 .aurora {
   background:
-    radial-gradient(40% 50% at 20% 20%, oklch(0.75 0.15 280 / 0.22), transparent 70%),
-    radial-gradient(35% 45% at 80% 10%, oklch(0.8 0.12 220 / 0.18), transparent 70%),
-    radial-gradient(45% 50% at 60% 80%, oklch(0.78 0.14 320 / 0.12), transparent 70%);
+    radial-gradient(40% 50% at 20% 20%, rgb(140 190 120 / 0.28), transparent 70%),
+    radial-gradient(35% 45% at 80% 10%, rgb(200 230 180 / 0.35), transparent 70%),
+    radial-gradient(45% 50% at 60% 80%, rgb(245 170 120 / 0.18), transparent 70%);
   animation: drift 24s ease-in-out infinite alternate;
 }
 .grid-fade {

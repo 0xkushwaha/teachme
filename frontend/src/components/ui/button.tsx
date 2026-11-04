@@ -12,6 +12,7 @@ const buttonVariants = cva(
         primary: 'bg-accent text-accent-foreground shadow-soft hover:bg-accent-hover hover:shadow-lift',
         secondary: 'bg-surface text-foreground border border-border shadow-soft hover:border-border-strong hover:bg-surface-2',
         ghost: 'text-foreground hover:bg-muted',
+        peach: 'border border-secondary text-secondary-foreground bg-transparent hover:bg-secondary-soft',
         soft: 'bg-accent-soft text-accent hover:brightness-95',
         danger: 'bg-danger text-white hover:brightness-110 shadow-soft',
         link: 'text-accent underline-offset-4 hover:underline px-0 h-auto',
