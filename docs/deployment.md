@@ -16,11 +16,38 @@ Example single-host template: `infrastructure/deployment/docker-compose.prod.yml
 3. Add your custom domain to **teachme-web**, the only origin browsers use. It proxies `/api` to the API over the private network.
 4. Point the Razorpay webhook at the **API's own** URL (`https://teachme-api.onrender.com/api/v1/payments/razorpay/webhook`), so the signed body is never proxied. Set the Google redirect URI to `<APP_URL>/api/v1/integrations/google/callback`.
 5. Migrations run automatically before each API deploy (`preDeployCommand`).
-6. After the first deploy, sign in and check that Admin › Audit log shows real client IPs (validates `TRUST_PROXY=2`).
+6. **First admin.** The dev seed refuses to run in production, so create the first administrator from the API service: **teachme-api → Shell**, then
+   ```bash
+   cd /app && npm run admin:create -- --email owner@yourdomain.com --name "Owner Name"
+   ```
+   It prompts (hidden, twice) for the password — 10-128 characters with upper case, lower case and a number. Details: [First admin](#first-admin).
+7. After the first deploy, sign in as that admin and check that Admin › Audit log shows real client IPs (validates `TRUST_PROXY=2`).
 
 Use paid plans: free instances sleep, and free databases expire. For Indian data residency or larger scale, move to AWS Mumbai (ECS/Fargate, RDS, ElastiCache) using the Docker images below.
 
 Self-hosted VM path: copy `infrastructure/deployment/backend.env.example` → `backend.env` and `.env.example` → `.env` on the server (both git-ignored), then use `docker-compose.prod.yml`.
+After the first `migrate` run, create the first admin (interactive, so `-it`; see [First admin](#first-admin)):
+```bash
+docker compose -f docker-compose.prod.yml run --rm -it backend-1 node dist/cli/create-admin.js --email owner@yourdomain.com --name "Owner Name"
+```
+
+## First admin
+`backend/src/cli/create-admin.ts` is compiled into the backend image as `dist/cli/create-admin.js` (`npm run admin:create` runs it; locally, without a build, use `npm run admin:create:dev`). It uses the image's own `DATABASE_URL`, so run it wherever the API runs: a Render Shell on **teachme-api**, `docker compose run`, or `docker run --rm -it --env-file backend.env $REGISTRY/teachme-backend:$TAG node dist/cli/create-admin.js …`.
+
+| Input | Flag | Env var |
+|---|---|---|
+| Email | `--email` | `ADMIN_EMAIL` |
+| Full name (needed only to create a new account) | `--name` | `ADMIN_NAME` |
+| Password | — never a flag, so it stays out of shell history | `ADMIN_PASSWORD`, otherwise a hidden prompt |
+| Set a new password on an existing account | `--reset-password` | — |
+
+What it does:
+- **No account with that email:** creates an `ADMIN` with the email marked verified, hashed with the API's Argon2id parameters and checked against the same password rule as sign-up.
+- **Existing active account:** promotes it to `ADMIN` and keeps its password (it takes effect on that user's next request). Suspended, deactivated or deleted accounts are refused.
+- **Already an admin:** does nothing, so it is safe to re-run. With `--reset-password` it sets the new password, clears any lockout and signs out every existing session (also the way to recover a locked-out admin).
+- Each change is written to the audit log (`admin.bootstrap_created`, `admin.bootstrap_promoted`, `admin.bootstrap_password_reset`) with no actor and user agent `cli:create-admin`, and is visible in Admin › Audit log.
+
+In a non-interactive context (CI job, one-off task) set `ADMIN_PASSWORD` in that job's environment only; never commit it or add it to `render.yaml`. Further admins can then be managed by this admin, or by running the script again.
 
 ## Build images
 ```bash
