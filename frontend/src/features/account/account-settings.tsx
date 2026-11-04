@@ -84,7 +84,8 @@ function PreferencesCard() {
   );
 }
 
-function PasswordCard() {
+/** Also used on the admin settings page (admins have no account settings page of their own). */
+export function PasswordCard() {
   const schema = z.object({ currentPassword: z.string().min(1, 'Enter your current password'), newPassword: passwordRule });
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
   const change = useMutation({ mutationFn: (v: z.infer<typeof schema>) => authService.changePassword(v.currentPassword, v.newPassword), onSuccess: () => { form.reset(); toast.success('Password changed'); }, onError: (e) => toast.error(errorMessage(e)) });
