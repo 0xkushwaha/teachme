@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea } from '@/components/ui/form';
 import { Switch } from '@/components/ui/overlay';
 import { Card, CardHeader, ErrorState, PageHeader, Skeleton } from '@/components/ui/primitives';
+import { PasswordCard } from '@/features/account/account-settings';
 import { ApiError, errorMessage } from '@/lib/api';
 import { adminService } from '@/services/admin';
 
@@ -67,15 +68,23 @@ function Flags({ value }: { value: any }) {
 
 export default function Settings() {
   const q = useQuery({ queryKey: ['admin', 'settings'], queryFn: adminService.settings });
-  if (q.isError) return <ErrorState message={errorMessage(q.error)} />;
-  if (!q.data) return <Skeleton className="h-96 rounded-2xl" />;
-  const flags = q.data.find((s) => s.key === 'features.flags');
+  const flags = q.data?.find((s) => s.key === 'features.flags');
   return (
     <>
       <PageHeader title="System settings" description="Booking, pricing, policy and reminder configuration. Every change is validated server-side and recorded in the audit log." />
       <div className="space-y-6">
-        {flags && <Flags value={flags.value} />}
-        {q.data.filter((s) => s.key !== 'features.flags').map((s) => <JsonSetting key={s.key} s={s} />)}
+        {/* The admin's own sign-in password; independent of the platform settings below. */}
+        <PasswordCard />
+        {q.isError ? (
+          <ErrorState message={errorMessage(q.error)} />
+        ) : !q.data ? (
+          <Skeleton className="h-96 rounded-2xl" />
+        ) : (
+          <>
+            {flags && <Flags value={flags.value} />}
+            {q.data.filter((s) => s.key !== 'features.flags').map((s) => <JsonSetting key={s.key} s={s} />)}
+          </>
+        )}
       </div>
     </>
   );
