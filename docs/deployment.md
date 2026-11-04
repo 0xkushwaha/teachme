@@ -25,6 +25,41 @@ Example single-host template: `infrastructure/deployment/docker-compose.prod.yml
 
 Use paid plans: free instances sleep, and free databases expire. For Indian data residency or larger scale, move to AWS Mumbai (ECS/Fargate, RDS, ElastiCache) using the Docker images below.
 
+### Free tier (client testing only)
+`render.free.yaml` runs the same app on Render's free plans so a client can try it at no cost. It is **not** for real users or real money. Use `render.yaml` before launch.
+
+What changes compared with `render.yaml` (these are Render free-tier rules, not choices):
+- **No background worker**: free instances don't exist for workers, so the API runs the queues in-process (`RUN_WORKERS_IN_API=true`).
+- **No pre-deploy command**: the API runs `prisma migrate deploy` on every start.
+- **Public API URL**: free web services can't receive private-network traffic, so `BACKEND_INTERNAL_URL` is the API's public `https://…onrender.com` address.
+- **Email on port 2525**: outbound 25/465/587 are blocked on free instances. Brevo works on `smtp-relay.brevo.com:2525` (log in with an SMTP key, not an API key). Email is **required** even for testing, because students must verify their address before booking.
+- **No Shell**: create the first admin from your own computer (below).
+
+What testers will notice:
+- Each service sleeps after 15 minutes without traffic, and the first visit after that takes about a minute (the API may need another minute).
+- Background jobs (reminder emails, Meet retries) only run while the API is awake.
+- 750 free instance hours a month are shared across the workspace.
+- **The free database is deleted 30 days after creation** and has no backups. Don't keep anything there you need.
+
+Steps:
+1. Render → New → **Blueprint** → select the repo, branch `main`, and set **Blueprint Path** to `render.free.yaml`.
+2. Fill in the prompts:
+   - `APP_URL` = `API_URL` = `CORS_ORIGINS` = `NEXT_PUBLIC_APP_URL` = the website's URL, e.g. `https://teachme-web.onrender.com`.
+   - `BACKEND_INTERNAL_URL` = the API's URL, e.g. `https://teachme-api.onrender.com`.
+   - Razorpay **test** keys.
+   - SMTP: host, user, SMTP key, `EMAIL_FROM` (a sender verified with the provider) and `SUPPORT_EMAIL`.
+   - Google values can stay empty (bookings work, just without Meet links).
+
+   Render may add a suffix to a service name if it's taken. If the URLs differ from what you entered, update the values above and redeploy (the website must be rebuilt after `BACKEND_INTERNAL_URL` changes).
+3. Create the first admin from your computer. Copy **teachme-db → Connect → External Database URL**, then:
+   ```bash
+   cd backend
+   DATABASE_URL='<External Database URL>' npm run admin:create:dev -- --email you@yourdomain.com --name "Platform Admin"
+   ```
+   It prompts for the password without showing it (10+ characters with upper case, lower case and a number). Use an email address you control: password resets and admin alerts go there. Afterwards you can set the database's access list to empty in the Render dashboard.
+4. In Razorpay test mode, add the webhook `https://<api>.onrender.com/api/v1/payments/razorpay/webhook` and put its secret in `RAZORPAY_WEBHOOK_SECRET`.
+5. Sign in as the admin, add subjects, invite a teacher, then register as a student and book with Razorpay's test cards.
+
 Self-hosted VM path: copy `infrastructure/deployment/backend.env.example` → `backend.env` and `.env.example` → `.env` on the server (both git-ignored), then use `docker-compose.prod.yml`.
 After the first `migrate` run, create the first admin (interactive, so `-it`; see [First admin](#first-admin)):
 ```bash
