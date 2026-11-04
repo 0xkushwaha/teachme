@@ -74,7 +74,7 @@ Load test (stepped 100/500/1,000/2,000 concurrent users, one laptop, one API pro
 
 ## Not started yet (next sessions)
 0. From session 4: staging load test on dedicated Postgres + 2–3 API replicas (the 2,000-user target); malware scanning for uploaded documents; real Razorpay test keys to exercise earnings from real captured payments end to end; a payout bank-details form (teachers currently share bank details with support out of band).
-1. Per-page `<title>` metadata for client dashboard pages (currently the site default).
+1. ~~Per-page `<title>` metadata for client dashboard pages~~ — done 4 Nov 2026: `DashboardShell` names the tab after the active section (e.g. "Finance reports · TeachMe").
 2. Admin MFA (TOTP/SSO); legal review of terms/privacy/refund pages.
 3. Load test on production-like staging (2+ API replicas, separate load generator).
 4. Live verification with real Razorpay test keys and a Google OAuth client (code paths covered by integration/E2E tests with provider fakes only).
