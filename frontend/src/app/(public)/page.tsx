@@ -43,7 +43,7 @@ export default async function HomePage() {
           </Reveal>
           <Reveal delay={0.05}>
             <h1 className="mt-6 max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.025em] sm:text-6xl">
-              Learn from a teacher who <span className="bg-gradient-to-r from-accent to-[oklch(0.62_0.18_320)] bg-clip-text text-transparent">fits how you think.</span>
+              Learn from a teacher who <span className="bg-gradient-to-r from-accent to-secondary bg-clip-text text-transparent">fits how you think.</span>
             </h1>
           </Reveal>
           <Reveal delay={0.1}>
@@ -144,7 +144,7 @@ export default async function HomePage() {
                 <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Teach on TeachMe</h2>
                 <p className="mt-2 max-w-lg opacity-75">Set your hours and rates, connect Google Calendar, and we’ll handle bookings, payments, Meet links and reminders.</p>
               </div>
-              <Button asChild size="lg" variant="secondary" className="shrink-0">
+              <Button asChild size="lg" variant="peach" className="shrink-0">
                 <Link href="/register?role=TEACHER">Apply to teach</Link>
               </Button>
             </div>

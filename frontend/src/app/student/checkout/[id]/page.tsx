@@ -50,7 +50,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         description: order.description,
         prefill: order.prefill,
         notes: { bookingId: id },
-        theme: { color: '#4f46e5' },
+        theme: { color: '#2d5e2a' },
         retry: { enabled: true, max_count: 3 },
         modal: { ondismiss: () => setPhase((p) => (p === 'in-checkout' ? 'idle' : p)), confirm_close: true },
         handler: async (resp) => {

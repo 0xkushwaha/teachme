@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Bell, ChevronDown, LogOut, Menu, Settings, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -53,9 +53,22 @@ export function DashboardShell({ role, nav, children }: { role: Role; nav: NavIt
     onError: (e) => toast.error(errorMessage(e)),
   });
 
+  // Dashboard pages are client components and can't export metadata, so name the browser tab after
+  // the active section (detail pages such as /student/sessions/[id] take their parent's name).
+  // The rendered <title> (hoisted into <head> by React 19) wins over the default title Next.js
+  // streams in on a full page load; the effect covers client-side navigation, where Next.js
+  // re-inserts its own <title> ahead of ours.
+  const section = nav.find((n) => (n.exact ? pathname === n.href : pathname === n.href || pathname.startsWith(`${n.href}/`)));
+  const tabTitle = section ? `${section.label} · TeachMe` : null;
+  const title = tabTitle ? <title>{tabTitle}</title> : null;
+  useEffect(() => {
+    if (tabTitle) document.title = tabTitle;
+  }, [tabTitle]);
+
   if (loading || !user) {
     return (
       <div className="flex min-h-dvh">
+        {title}
         <div className="hidden w-64 border-r border-border p-4 lg:block">
           <Skeleton className="h-8 w-32" />
           <div className="mt-8 space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-9" />)}</div>
@@ -91,6 +104,7 @@ export function DashboardShell({ role, nav, children }: { role: Role; nav: NavIt
 
   return (
     <div className="flex min-h-dvh bg-background">
+      {title}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-surface/60 px-3 py-4 lg:flex">
         <div className="px-2 pb-6">
           <Logo href={base} />
