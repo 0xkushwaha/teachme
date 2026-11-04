@@ -10,8 +10,8 @@
 Example single-host template: `infrastructure/deployment/docker-compose.prod.yml`.
 
 ## Recommended host: Render (Singapore)
-`render.yaml` defines every service and env var: frontend, API, worker, PostgreSQL 16 and Redis-compatible Key Value with `noeviction`.
-1. Render → New → **Blueprint** → select this repo. Review the preview; fix any reported spec errors before applying.
+`render.production.yaml` defines every production service and env var: frontend, API, worker, PostgreSQL 16 and Redis-compatible Key Value with `noeviction`. (`render.yaml`, the file Render reads by default, is the free testing setup below.)
+1. Add a card to the Render workspace (paid plans need one). Then Render → New → **Blueprint** → select this repo and set **Blueprint Path** to `render.production.yaml`. Review the preview; fix any reported spec errors before applying.
 2. Fill in the `sync: false` prompts: `APP_URL` = `API_URL` = `CORS_ORIGINS` = `NEXT_PUBLIC_APP_URL` = your site origin, plus the Razorpay, Google and SMTP values. Render generates `JWT_ACCESS_SECRET`, `DATA_ENCRYPTION_KEY` and `METRICS_TOKEN`.
 3. Add your custom domain to **teachme-web**, the only origin browsers use. It proxies `/api` to the API over the private network.
 4. Point the Razorpay webhook at the **API's own** URL (`https://teachme-api.onrender.com/api/v1/payments/razorpay/webhook`), so the signed body is never proxied. Set the Google redirect URI to `<APP_URL>/api/v1/integrations/google/callback`.
@@ -26,9 +26,11 @@ Example single-host template: `infrastructure/deployment/docker-compose.prod.yml
 Use paid plans: free instances sleep, and free databases expire. For Indian data residency or larger scale, move to AWS Mumbai (ECS/Fargate, RDS, ElastiCache) using the Docker images below.
 
 ### Free tier (client testing only)
-`render.free.yaml` runs the same app on Render's free plans so a client can try it at no cost. It is **not** for real users or real money. Use `render.yaml` before launch.
+`render.yaml` runs the same app on Render's free plans so a client can try it at no cost, with no card on file. It is **not** for real users or real money. Use `render.production.yaml` before launch.
 
-What changes compared with `render.yaml` (these are Render free-tier rules, not choices):
+It is the default file deliberately: Render previews `render.yaml` the moment a repository is picked, before the Blueprint Path can be edited, so a paid default would show a "Payment Information Required" dialog first.
+
+What changes compared with `render.production.yaml` (these are Render free-tier rules, not choices):
 - **No background worker**: free instances don't exist for workers, so the API runs the queues in-process (`RUN_WORKERS_IN_API=true`).
 - **No pre-deploy command**: the API runs `prisma migrate deploy` on every start.
 - **Public API URL**: free web services can't receive private-network traffic, so `BACKEND_INTERNAL_URL` is the API's public `https://…onrender.com` address.
@@ -42,7 +44,7 @@ What testers will notice:
 - **The free database is deleted 30 days after creation** and has no backups. Don't keep anything there you need.
 
 Steps:
-1. Render → New → **Blueprint** → select the repo, branch `main`, and set **Blueprint Path** to `render.free.yaml`.
+1. Render → New → **Blueprint** → select the repo, branch `main`, and leave **Blueprint Path** empty (it defaults to `render.yaml`). The preview should list four services, all on the Free plan, and no worker.
 2. Fill in the prompts:
    - `APP_URL` = `API_URL` = `CORS_ORIGINS` = `NEXT_PUBLIC_APP_URL` = the website's URL, e.g. `https://teachme-web.onrender.com`.
    - `BACKEND_INTERNAL_URL` = the API's URL, e.g. `https://teachme-api.onrender.com`.
@@ -82,7 +84,7 @@ What it does:
 - **Already an admin:** does nothing, so it is safe to re-run. With `--reset-password` it sets the new password, clears any lockout and signs out every existing session (also the way to recover a locked-out admin).
 - Each change is written to the audit log (`admin.bootstrap_created`, `admin.bootstrap_promoted`, `admin.bootstrap_password_reset`) with no actor and user agent `cli:create-admin`, and is visible in Admin › Audit log.
 
-In a non-interactive context (CI job, one-off task) set `ADMIN_PASSWORD` in that job's environment only; never commit it or add it to `render.yaml`. Further admins can then be managed by this admin, or by running the script again.
+In a non-interactive context (CI job, one-off task) set `ADMIN_PASSWORD` in that job's environment only; never commit it or add it to a Render Blueprint file. Further admins can then be managed by this admin, or by running the script again.
 
 ## Build images
 ```bash
