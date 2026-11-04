@@ -60,6 +60,8 @@ All seeded accounts share the password defined in `backend/prisma/seed.ts` (`SEE
 | Teachers | `meera.iyer@teachme.dev`, `arjun.mehta@teachme.dev`, … (see seed) |
 | Teacher awaiting approval | `pending.teacher@teachme.dev` |
 
+The seed refuses to run when `NODE_ENV=production`. In production, create the first admin with `npm run admin:create` instead (see [First admin](#first-admin-in-production)).
+
 Teacher accounts are invite-only by default: sign in as the admin, open **Teachers → Invite teacher**, and open the link from the email in Mailpit (<http://localhost:8025>). To allow open teacher sign-up instead, enable `features.flags.teacherRegistration` in **System settings**.
 
 Without Razorpay/Google credentials the app runs fully, but **Pay** reports that payments aren’t configured and Meet links show “not available” — nothing is faked. Configure them with [docs/integrations.md](docs/integrations.md).
@@ -94,3 +96,10 @@ cd .. && ./scripts/run-loadtest.sh            # k6 (Docker) against a production
 
 ## Deployment
 Docker images (`backend/Dockerfile`, `frontend/Dockerfile`), nginx ingress, production compose template, migrations, health checks, monitoring and backup/restore: [docs/deployment.md](docs/deployment.md). Incident procedures: [docs/operations-runbook.md](docs/operations-runbook.md). Security model and endpoint authorization review: [docs/security.md](docs/security.md).
+
+### First admin in production
+The dev seed and its shared password are never used in production. After the first deploy, create (or promote) the first administrator from inside the backend container, for example a Render Shell on **teachme-api**:
+```bash
+cd /app && npm run admin:create -- --email owner@yourdomain.com --name "Owner Name"
+```
+It prompts for the password (hidden), or reads it from `ADMIN_PASSWORD`. It never accepts the password as an argument. Re-running it is safe. If the email already belongs to an account, that account is promoted to admin. Options and the self-hosted command: [docs/deployment.md#first-admin](docs/deployment.md#first-admin).
