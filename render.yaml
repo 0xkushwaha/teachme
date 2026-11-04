@@ -49,7 +49,8 @@ services:
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     # Pre-deploy commands are paid-only, so migrate on start (idempotent), then run the API.
-    dockerCommand: sh -c "npx prisma migrate deploy && exec node dist/server.js"
+    # Kept free of quotes and shell operators: Render passes quotes in dockerCommand through literally.
+    dockerCommand: npm run start:migrate
     healthCheckPath: /api/v1/health/ready
     envVars:
       - key: NODE_ENV

@@ -9,6 +9,7 @@
   "scripts": {
     "build": "nest build",
     "start": "node dist/server.js",
+    "start:migrate": "prisma migrate deploy && exec node dist/server.js",
     "start:worker": "node dist/worker.js",
     "dev": "nest start --watch --entryFile server",
     "dev:worker": "nest start --watch --entryFile worker",
