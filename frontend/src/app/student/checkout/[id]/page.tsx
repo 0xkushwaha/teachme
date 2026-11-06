@@ -111,7 +111,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             <Card className="p-6">
               <CheckCircle2 className="size-10 text-success" />
               <h2 className="mt-4 text-lg font-semibold">Payment verified — session confirmed</h2>
-              <p className="mt-1 text-sm text-muted-foreground">A confirmation email is on its way. Your Google Meet link appears on the booking as soon as your teacher’s calendar creates it.</p>
+              <p className="mt-1 text-sm text-muted-foreground">A confirmation email is on its way. Your Google Meet link appears on the booking as soon as your topper’s calendar creates it.</p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button asChild><Link href={`/student/sessions/${b.id}`}>View booking</Link></Button>
                 <Button asChild variant="secondary"><a href={bookingService.icsUrl(b.id)}>Add to calendar (.ics)</a></Button>

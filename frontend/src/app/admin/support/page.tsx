@@ -1,5 +1,6 @@
 'use client';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -21,8 +22,10 @@ export default function SupportTickets() {
   const [open, setOpen] = useState<any>(null);
   const [status, setStatus] = useState('IN_PROGRESS');
   const [note, setNote] = useState('');
+  const [deleting, setDeleting] = useState<any>(null);
   const q = useQuery({ queryKey: ['admin', 'tickets', tab, page], queryFn: () => adminService.tickets({ status: tab === 'ALL' ? undefined : tab, page }), placeholderData: keepPreviousData });
   const update = useMutation({ mutationFn: () => adminService.updateTicket(open.id, status, note || undefined), onSuccess: () => { toast.success('Ticket updated'); setOpen(null); qc.invalidateQueries({ queryKey: ['admin', 'tickets'] }); }, onError: (e) => toast.error(errorMessage(e)) });
+  const remove = useMutation({ mutationFn: (id: string) => adminService.deleteTicket(id), onSuccess: () => { toast.success('Ticket deleted'); setDeleting(null); qc.invalidateQueries({ queryKey: ['admin', 'tickets'] }); }, onError: (e) => toast.error(errorMessage(e)) });
   return (
     <>
       <PageHeader title="Support tickets" description="Contact-form messages and booking issue reports. Reply to the customer by email." />
@@ -36,7 +39,10 @@ export default function SupportTickets() {
                 <p className="mt-0.5 text-[13px] text-muted-foreground">{t.name} · <a className="text-accent" href={`mailto:${t.email}`}>{t.email}</a> · {formatDateTime(t.createdAt, timezone)}{t.bookingId && <> · <Link className="text-accent" href={`/admin/bookings/${t.bookingId}`}>booking</Link></>}</p>
                 <p className="mt-3 whitespace-pre-line text-sm">{t.message}</p>
                 {t.adminNote && <p className="mt-3 rounded-lg bg-surface-2 p-3 text-[13px] text-muted-foreground">Note: {t.adminNote}</p>}
-                <Button size="sm" variant="secondary" className="mt-4" onClick={() => { setOpen(t); setStatus(t.status === 'OPEN' ? 'IN_PROGRESS' : t.status); setNote(t.adminNote ?? ''); }}>Update</Button>
+                <div className="mt-4 flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => { setOpen(t); setStatus(t.status === 'OPEN' ? 'IN_PROGRESS' : t.status); setNote(t.adminNote ?? ''); }}>Update</Button>
+                  <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleting(t)}><Trash2 />Delete</Button>
+                </div>
               </Card>
             ))}
           </div>
@@ -49,6 +55,13 @@ export default function SupportTickets() {
           <Textarea aria-label="Internal note" placeholder="Internal note" value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
       </Dialog>
+      <Dialog
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={`Delete “${deleting?.subject ?? ''}”?`}
+        description="The ticket and its message are removed permanently. This cannot be undone."
+        footer={<><Button variant="secondary" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="danger" loading={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>Delete</Button></>}
+      />
     </>
   );
 }

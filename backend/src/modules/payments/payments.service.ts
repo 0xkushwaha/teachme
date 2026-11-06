@@ -193,7 +193,7 @@ export class PaymentsService {
     if (!['PENDING_PAYMENT', 'EXPIRED', 'PAYMENT_FAILED'].includes(booking.status)) return `Booking is ${booking.status}`;
     if (booking.startAt <= new Date()) return 'Session start time has passed';
     const teacher = await tx.teacherProfile.findUnique({ where: { id: booking.teacherId }, include: { user: { select: { status: true } } } });
-    if (!teacher || teacher.approvalStatus !== 'APPROVED' || teacher.user.status !== 'ACTIVE') return 'Teacher is no longer available';
+    if (!teacher || teacher.approvalStatus !== 'APPROVED' || teacher.user.status !== 'ACTIVE') return 'Topper is no longer available';
     return true;
   }
 

@@ -62,7 +62,7 @@ export function BookingList({ viewer }: { viewer: 'student' | 'teacher' }) {
           icon={<CalendarX2 />}
           title={{ upcoming: 'No upcoming sessions', pending: 'Nothing awaiting payment', past: 'No past sessions yet', cancelled: 'No cancelled sessions', all: 'No sessions' }[scope]}
           description={viewer === 'student' && scope === 'upcoming' ? 'Book a session and it will appear here.' : undefined}
-          action={viewer === 'student' && scope === 'upcoming' ? <Button asChild><Link href="/student/find">Find a teacher</Link></Button> : undefined}
+          action={viewer === 'student' && scope === 'upcoming' ? <Button asChild><Link href="/student/find">Find a topper</Link></Button> : undefined}
         />
       )}
     </div>

@@ -60,8 +60,8 @@ export function RegisterForm() {
       <form className="space-y-4" onSubmit={form.handleSubmit((v) => register.mutate(v))} noValidate>
         {register.isError && <Alert tone="danger">{errorMessage(register.error)}</Alert>}
         {!teachersOpen && wantsToTeach && platform.isSuccess && (
-          <Alert tone="info" title="Teacher accounts are by invitation">
-            Our team invites teachers by email. <Link href="/contact" className="underline underline-offset-4">Contact us</Link> to apply — you can still create a student account below.
+          <Alert tone="info" title="Topper accounts are by invitation">
+            Our team invites toppers by email. <Link href="/contact" className="underline underline-offset-4">Contact us</Link> to apply — you can still create a student account below.
           </Alert>
         )}
         <fieldset className={cn(!teachersOpen && 'hidden')}>
@@ -76,7 +76,7 @@ export function RegisterForm() {
             ))}
           </div>
         </fieldset>
-        {teachersOpen && role === 'TEACHER' && <p className="text-[13px] text-muted-foreground">Teacher profiles are reviewed by our team before students can book them.</p>}
+        {teachersOpen && role === 'TEACHER' && <p className="text-[13px] text-muted-foreground">Topper profiles are reviewed by our team before students can book them.</p>}
         <Field label="Full name" htmlFor="fullName" error={e.fullName?.message}><Input autoComplete="name" {...form.register('fullName')} /></Field>
         <Field label="Email" htmlFor="email" error={e.email?.message}><Input type="email" autoComplete="email" {...form.register('email')} /></Field>
         <Field label="Password" htmlFor="password" error={e.password?.message} hint="10+ characters with upper case, lower case and a number"><Input type="password" autoComplete="new-password" {...form.register('password')} /></Field>

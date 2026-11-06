@@ -19,7 +19,7 @@ function LearningProfile() {
   const save = useMutation({ mutationFn: accountService.updateStudentProfile, onSuccess: () => toast.success('Learning profile saved'), onError: (e) => toast.error(errorMessage(e)) });
   return (
     <Card>
-      <CardHeader title="Learning profile" description="Shared with teachers you book so they can prepare." />
+      <CardHeader title="Learning profile" description="Shared with toppers you book so they can prepare." />
       <form onSubmit={form.handleSubmit((v) => save.mutate(v))} className="grid gap-4 p-5 sm:grid-cols-2">
         <Field label="Level or grade" htmlFor="lp-grade"><Input placeholder="e.g. Class 12 (CBSE)" {...form.register('gradeLevel')} /></Field>
         <Field label="Preferred language" htmlFor="lp-lang"><Input placeholder="e.g. English" {...form.register('preferredLanguage')} /></Field>

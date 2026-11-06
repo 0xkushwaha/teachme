@@ -55,7 +55,7 @@ export function TeacherDirectory({ subjects }: { subjects: { slug: string; name:
 
   return (
     <>
-      <PageHeader eyebrow="Teachers" title={subjectName ? `${subjectName} teachers` : 'Find your teacher'} description="Every teacher here is verified and bookable. Prices are per hour before platform fees, which are shown at checkout." />
+      <PageHeader eyebrow="Toppers" title={subjectName ? `${subjectName} toppers` : 'Find your topper'} description="Every topper here is verified and bookable. Prices are per hour before platform fees, which are shown at checkout." />
       <div className="mb-6 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row">
           <label htmlFor="dir-q" className="sr-only">Search</label>
@@ -122,7 +122,7 @@ export function TeacherDirectory({ subjects }: { subjects: { slug: string; name:
       ) : res.data?.data.length ? (
         <>
           <p className="mb-3 text-[13px] text-muted-foreground" aria-live="polite">
-            {res.data.meta.total} teacher{res.data.meta.total === 1 ? '' : 's'}
+            {res.data.meta.total} topper{res.data.meta.total === 1 ? '' : 's'}
           </p>
           <div className={`grid gap-4 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${res.isFetching ? 'opacity-60' : ''}`}>
             {res.data.data.map((t) => <TeacherCard key={t.id} teacher={t} subjectSlug={query.subject} />)}
@@ -130,7 +130,7 @@ export function TeacherDirectory({ subjects }: { subjects: { slug: string; name:
           <Pagination page={res.data.meta.page} totalPages={res.data.meta.totalPages} onPage={(p) => set({ page: String(p) })} />
         </>
       ) : (
-        <EmptyState icon={<SearchX />} title="No teachers match these filters" description="Try removing a filter or searching for a broader topic." action={<Button variant="secondary" onClick={() => router.replace(pathname)}>Reset search</Button>} />
+        <EmptyState icon={<SearchX />} title="No toppers match these filters" description="Try removing a filter or searching for a broader topic." action={<Button variant="secondary" onClick={() => router.replace(pathname)}>Reset search</Button>} />
       )}
     </>
   );

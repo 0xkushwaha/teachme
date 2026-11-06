@@ -32,7 +32,7 @@ export default function AdminOverview() {
             <StatCard label="Gross revenue" value={formatMoney(d.revenue.grossMinor)} hint={`${d.revenue.payments} payments · ${formatMoney(d.revenue.refundedMinor)} refunded`} icon={<IndianRupee />} />
             <StatCard label="Bookings created" value={d.bookings.created} hint={`${d.bookings.confirmed} confirmed`} icon={<CalendarCheck2 />} />
             <StatCard label="Checkout conversion" value={`${Math.round(d.bookings.conversionRate * 100)}%`} hint="Reserved → paid" icon={<Percent />} />
-            <StatCard label="Users" value={(d.users.STUDENT ?? 0) + (d.users.TEACHER ?? 0)} hint={`${d.users.STUDENT ?? 0} students · ${d.teachers.APPROVED ?? 0} live teachers · ${d.teachers.PENDING ?? 0} pending`} icon={<Users />} />
+            <StatCard label="Users" value={(d.users.STUDENT ?? 0) + (d.users.TEACHER ?? 0)} hint={`${d.users.STUDENT ?? 0} students · ${d.teachers.APPROVED ?? 0} live toppers · ${d.teachers.PENDING ?? 0} pending`} icon={<Users />} />
           </div>
           <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
             <Card>

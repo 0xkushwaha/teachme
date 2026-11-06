@@ -73,9 +73,9 @@ export class AvailabilityService {
     const teacher = await this.prisma.teacherProfile.findFirst({
       where: { id: teacherId, approvalStatus: 'APPROVED', user: { status: 'ACTIVE' } },
     });
-    if (!teacher) throw AppError.notFound('Teacher');
+    if (!teacher) throw AppError.notFound('Topper');
     if (!teacher.sessionDurations.includes(durationMinutes))
-      throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'This teacher does not offer that session length');
+      throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'This topper does not offer that session length');
     const from = new Date(fromIso);
     const to = new Date(toIso);
     if (!(to > from) || to.getTime() - from.getTime() > MAX_RANGE_DAYS * DAY)

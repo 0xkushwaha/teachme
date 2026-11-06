@@ -9,10 +9,10 @@ const GROUPS: { id: string; title: string; items: [string, React.ReactNode][] }[
     id: 'students',
     title: 'Booking & sessions',
     items: [
-      ['How do I join my session?', 'Open the booking from your dashboard and press “Join Google Meet”. The link is also in your confirmation email and reminders. You don’t need a Google account to join as a guest, though the teacher may need to admit you.'],
-      ['What if the Meet link isn’t there yet?', 'Meet links are created by Google when your teacher’s calendar receives the booking — usually within a minute. If it’s still missing close to the start time, your booking page shows the status and you can contact support.'],
+      ['How do I join my session?', 'Open the booking from your dashboard and press “Join Google Meet”. The link is also in your confirmation email and reminders. You don’t need a Google account to join as a guest, though the topper may need to admit you.'],
+      ['What if the Meet link isn’t there yet?', 'Meet links are created by Google when your topper’s calendar receives the booking — usually within a minute. If it’s still missing close to the start time, your booking page shows the status and you can contact support.'],
       ['Can someone else book the same slot while I pay?', 'No. When you continue to payment we reserve the slot for a few minutes. If payment doesn’t complete in time, the slot is released.'],
-      ['Which timezone are times shown in?', 'Always yours. You can change your timezone in Settings; the teacher sees the same session in theirs.'],
+      ['Which timezone are times shown in?', 'Always yours. You can change your timezone in Settings; the topper sees the same session in theirs.'],
       ['Can I add sessions to my calendar?', 'Yes — every confirmed booking has “Add to Google Calendar” and a downloadable .ics file for Apple Calendar or Outlook. We never ask students for calendar access.'],
     ],
   },
@@ -28,9 +28,9 @@ const GROUPS: { id: string; title: string; items: [string, React.ReactNode][] }[
   },
   {
     id: 'teachers',
-    title: 'For teachers',
+    title: 'For toppers',
     items: [
-      ['How do I become a teacher?', 'Register as a teacher, complete your profile, subjects and availability. Our team reviews your profile — usually within two working days.'],
+      ['How do I become a topper?', 'Register as a topper, complete your profile, subjects and availability. Our team reviews your profile — usually within two working days.'],
       ['Why do you need Google Calendar access?', 'To add each confirmed session to your calendar and create its Google Meet link. We request only the “manage events” permission, not access to read your whole calendar settings, and you can disconnect at any time.'],
       ['What happens if I need to cancel?', 'Cancel from the booking page with a short note. The student is refunded in full and notified immediately.'],
     ],

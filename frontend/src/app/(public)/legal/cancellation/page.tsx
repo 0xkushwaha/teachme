@@ -21,10 +21,10 @@ export default async function Cancellation() {
       ) : (
         <p>Policy details are temporarily unavailable; they are always shown on the booking page.</p>
       )}
-      <h2>Teacher cancellations</h2>
-      <p>If your teacher cancels, you receive a full refund, whatever the timing.</p>
+      <h2>Topper cancellations</h2>
+      <p>If your topper cancels, you receive a full refund, whatever the timing.</p>
       <h2>Rescheduling</h2>
-      {p && <p>You can move a confirmed session to another open slot with the same teacher up to {p.reschedule.maxReschedules} times, provided at least {p.reschedule.minHoursBefore} hours remain before it starts.</p>}
+      {p && <p>You can move a confirmed session to another open slot with the same topper up to {p.reschedule.maxReschedules} times, provided at least {p.reschedule.minHoursBefore} hours remain before it starts.</p>}
       <h2>Payment problems</h2>
       <ul>
         <li>If a payment completes after your reservation expired and the slot was taken, we refund the full amount automatically.</li>

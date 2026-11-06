@@ -9,8 +9,8 @@ const mono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
-  title: { default: 'TeachMe — Live 1:1 tutoring with verified teachers', template: '%s · TeachMe' },
-  description: 'Find a verified teacher by subject, book a live Google Meet session in their real availability, and pay securely. Reminders, rescheduling and refunds built in.',
+  title: { default: 'TeachMe — Live 1:1 tutoring with verified toppers', template: '%s · TeachMe' },
+  description: 'Find a verified topper by subject, book a live Google Meet session in their real availability, and pay securely. Reminders, rescheduling and refunds built in.',
   openGraph: { type: 'website', siteName: 'TeachMe' },
 };
 

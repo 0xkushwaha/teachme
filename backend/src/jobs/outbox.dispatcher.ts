@@ -184,7 +184,7 @@ export class OutboxDispatcher implements OnApplicationBootstrap, OnApplicationSh
         const refundMinor = Number(p.refundMinor);
         for (const r of ['student', 'teacher'] as const) {
           const ctx = await this.context.forBooking(bookingId, r);
-          const by = actor === 'STUDENT' ? (r === 'student' ? 'you' : 'the student') : actor === 'TEACHER' ? (r === 'teacher' ? 'you' : 'your teacher') : 'TeachMe support';
+          const by = actor === 'STUDENT' ? (r === 'student' ? 'you' : 'the student') : actor === 'TEACHER' ? (r === 'teacher' ? 'you' : 'your topper') : 'TeachMe support';
           await this.notifications.notify({
             userId: ctx.userId,
             templateKey: 'booking_cancelled',

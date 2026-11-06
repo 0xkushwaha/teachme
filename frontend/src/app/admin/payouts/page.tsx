@@ -28,7 +28,7 @@ export default function AdminPayouts() {
       if (action!.kind === 'paid') return adminService.markPayoutPaid(id, text.trim());
       return adminService.rejectPayout(id, text.trim());
     },
-    onSuccess: () => { toast.success('Payout updated and teacher notified'); setAction(null); setText(''); qc.invalidateQueries({ queryKey: ['admin', 'payouts'] }); },
+    onSuccess: () => { toast.success('Payout updated and topper notified'); setAction(null); setText(''); qc.invalidateQueries({ queryKey: ['admin', 'payouts'] }); },
     onError: (e) => toast.error(errorMessage(e)),
   });
   const total = (s: string) => q.data?.totals.find((t) => t.status === s);
@@ -36,7 +36,7 @@ export default function AdminPayouts() {
 
   return (
     <>
-      <PageHeader title="Teacher payouts" description="Teachers request payouts of their available balance. Approve, send the bank transfer outside TeachMe, then record the transfer reference." />
+      <PageHeader title="Topper payouts" description="Toppers request payouts of their available balance. Approve, send the bank transfer outside TeachMe, then record the transfer reference." />
       <Alert tone="info" className="mb-6">TeachMe does not move money for payouts. “Mark paid” records a transfer you have already made, with its bank reference, for reconciliation.</Alert>
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Awaiting approval" value={formatMoney(total('REQUESTED')?.amountMinor ?? 0)} hint={`${total('REQUESTED')?.count ?? 0} request(s)`} />
@@ -49,7 +49,7 @@ export default function AdminPayouts() {
       ) : (
         <>
           <Table>
-            <thead><tr><th>Teacher</th><th className="text-right">Amount</th><th>Status</th><th>Requested</th><th>Details</th><th /></tr></thead>
+            <thead><tr><th>Topper</th><th className="text-right">Amount</th><th>Status</th><th>Requested</th><th>Details</th><th /></tr></thead>
             <tbody>
               {q.data.data.map((p) => (
                 <tr key={p.id}>
@@ -74,13 +74,13 @@ export default function AdminPayouts() {
         open={!!action}
         onOpenChange={(o) => { if (!o) { setAction(null); setText(''); } }}
         title={action ? `${action.kind === 'approve' ? 'Approve' : action.kind === 'paid' ? 'Record payment of' : 'Reject'} ${formatMoney(action.payout.amountMinor)} for ${action.payout.teacher.user.fullName}?` : ''}
-        description={action?.kind === 'paid' ? 'Only do this after the bank transfer has been sent. This cannot be undone.' : action?.kind === 'reject' ? 'The amount returns to the teacher’s available balance and they see your reason.' : 'Approved payouts are queued for you to transfer and then mark as paid.'}
+        description={action?.kind === 'paid' ? 'Only do this after the bank transfer has been sent. This cannot be undone.' : action?.kind === 'reject' ? 'The amount returns to the topper’s available balance and they see your reason.' : 'Approved payouts are queued for you to transfer and then mark as paid.'}
         footer={<><Button variant="secondary" onClick={() => setAction(null)}>Cancel</Button><Button variant={action?.kind === 'reject' ? 'danger' : 'primary'} disabled={!textValid} loading={act.isPending} onClick={() => act.mutate()}>Confirm</Button></>}
       >
         {action?.kind === 'paid' ? (
           <Field label="Bank transfer reference (UTR)" htmlFor="payout-ref"><Input maxLength={100} value={text} onChange={(e) => setText(e.target.value)} /></Field>
         ) : (
-          <Field label={action?.kind === 'reject' ? 'Reason (sent to the teacher)' : 'Note (optional)'} htmlFor="payout-text"><Textarea rows={3} maxLength={500} value={text} onChange={(e) => setText(e.target.value)} /></Field>
+          <Field label={action?.kind === 'reject' ? 'Reason (sent to the topper)' : 'Note (optional)'} htmlFor="payout-text"><Textarea rows={3} maxLength={500} value={text} onChange={(e) => setText(e.target.value)} /></Field>
         )}
       </Dialog>
     </>

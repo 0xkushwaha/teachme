@@ -1,6 +1,6 @@
 'use client';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, FileText, MailPlus, RotateCw, Send, XCircle } from 'lucide-react';
+import { ExternalLink, FileText, MailPlus, RotateCw, Send, Trash2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Field, Input, Textarea } from '@/components/ui/form';
 import { Dialog, Tabs } from '@/components/ui/overlay';
 import { Avatar, Badge, Card, EmptyState, ErrorState, PageHeader, Pagination, Skeleton, StatusBadge, Table } from '@/components/ui/primitives';
+import { RemoveAccountDialog, type RemovableAccount } from '@/features/admin/remove-account-dialog';
 import { errorMessage } from '@/lib/api';
 import { adminService, type Invitation } from '@/services/admin';
 import { formatMoney, relative } from '@/utils/format';
@@ -27,11 +28,11 @@ export default function AdminTeachers() {
   return (
     <>
       <PageHeader
-        title="Teachers"
-        description="Invite teachers, review applications and documents, and manage live profiles."
-        actions={<Button onClick={() => setInviteOpen(true)}><MailPlus />Invite teacher</Button>}
+        title="Toppers"
+        description="Invite toppers, review applications and documents, and manage live profiles."
+        actions={<Button onClick={() => setInviteOpen(true)}><MailPlus />Invite topper</Button>}
       />
-      <Tabs className="mb-5" value={section} onValueChange={(v) => setSection(v as typeof section)} items={[{ value: 'teachers', label: 'Teachers & applications' }, { value: 'invitations', label: 'Invitations' }]} />
+      <Tabs className="mb-5" value={section} onValueChange={(v) => setSection(v as typeof section)} items={[{ value: 'teachers', label: 'Toppers & applications' }, { value: 'invitations', label: 'Invitations' }]} />
       {section === 'teachers' ? <TeacherList /> : <Invitations />}
       <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} onSent={() => setSection('invitations')} />
     </>
@@ -46,11 +47,12 @@ function TeacherList() {
   const [search, setSearch] = useState('');
   const [decision, setDecision] = useState<{ t: any; status: 'APPROVED' | 'REJECTED' | 'SUSPENDED' } | null>(null);
   const [note, setNote] = useState('');
+  const [deleting, setDeleting] = useState<RemovableAccount | null>(null);
   const filter = tab === 'SUBMITTED' ? { approvalStatus: 'PENDING', stage: 'submitted' } : tab === 'DRAFT' ? { approvalStatus: 'PENDING', stage: 'draft' } : tab === 'ALL' ? {} : { approvalStatus: tab };
   const q = useQuery({ queryKey: ['admin', 'teachers', tab, page, search], queryFn: () => adminService.teachers({ ...filter, page, q: search || undefined }), placeholderData: keepPreviousData });
   const decide = useMutation({
     mutationFn: () => adminService.setApproval(decision!.t.id, decision!.status, note.trim() || undefined),
-    onSuccess: () => { toast.success('Teacher updated and notified'); setDecision(null); setNote(''); qc.invalidateQueries({ queryKey: ['admin', 'teachers'] }); },
+    onSuccess: () => { toast.success('Topper updated and notified'); setDecision(null); setNote(''); qc.invalidateQueries({ queryKey: ['admin', 'teachers'] }); },
     onError: (e) => toast.error(errorMessage(e)),
   });
   const needsReason = decision?.status === 'REJECTED';
@@ -58,7 +60,7 @@ function TeacherList() {
     <>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={tab} onValueChange={(v) => { setTab(v); setPage(1); }} items={TEACHER_TABS} />
-        <Input aria-label="Search teachers" placeholder="Search name or email" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="sm:max-w-xs" />
+        <Input aria-label="Search toppers" placeholder="Search name or email" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="sm:max-w-xs" />
       </div>
       {q.isError ? <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} /> : q.isLoading ? <Skeleton className="h-80 rounded-2xl" /> : q.data?.data.length ? (
         <>
@@ -92,6 +94,7 @@ function TeacherList() {
                       )}
                       {t.approvalStatus === 'PENDING' && submitted && <Button size="sm" variant="secondary" onClick={() => setDecision({ t, status: 'REJECTED' })}>Reject</Button>}
                       {t.approvalStatus === 'APPROVED' && <Button size="sm" variant="secondary" className="text-danger" onClick={() => setDecision({ t, status: 'SUSPENDED' })}>Suspend</Button>}
+                      <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleting(t.user)}><Trash2 />Delete</Button>
                     </div>
                   </div>
                 </Card>
@@ -100,18 +103,19 @@ function TeacherList() {
           </div>
           <Pagination page={q.data.meta.page} totalPages={q.data.meta.totalPages} onPage={setPage} />
         </>
-      ) : <EmptyState title={tab === 'SUBMITTED' ? 'No applications waiting for review' : 'No teachers here'} description={tab === 'SUBMITTED' ? 'Teachers appear here after they submit their application.' : undefined} />}
+      ) : <EmptyState title={tab === 'SUBMITTED' ? 'No applications waiting for review' : 'No toppers here'} description={tab === 'SUBMITTED' ? 'Toppers appear here after they submit their application.' : undefined} />}
       <Dialog
         open={!!decision}
         onOpenChange={(o) => !o && setDecision(null)}
         title={`${decision?.status === 'APPROVED' ? (decision.t.approvalStatus === 'SUSPENDED' ? 'Reactivate' : 'Approve') : decision?.status === 'REJECTED' ? 'Reject' : 'Suspend'} ${decision?.t.user.fullName ?? ''}?`}
-        description={decision?.status === 'APPROVED' ? 'Their profile goes live and students can book them. They are notified by email.' : decision?.status === 'REJECTED' ? 'The teacher sees your reason and can update their application and resubmit.' : 'Their profile is hidden from students. Existing confirmed bookings remain and should be reviewed.'}
+        description={decision?.status === 'APPROVED' ? 'Their profile goes live and students can book them. They are notified by email.' : decision?.status === 'REJECTED' ? 'The topper sees your reason and can update their application and resubmit.' : 'Their profile is hidden from students. Existing confirmed bookings remain and should be reviewed.'}
         footer={<><Button variant="secondary" onClick={() => setDecision(null)}>Cancel</Button><Button variant={decision?.status === 'APPROVED' ? 'primary' : 'danger'} disabled={needsReason && note.trim().length < 5} loading={decide.isPending} onClick={() => decide.mutate()}>Confirm</Button></>}
       >
-        <Field label={needsReason ? 'Reason (sent to the teacher)' : 'Internal note (audit log)'} htmlFor="decision-note" hint={needsReason ? 'At least 5 characters. Be specific about what to change.' : undefined}>
+        <Field label={needsReason ? 'Reason (sent to the topper)' : 'Internal note (audit log)'} htmlFor="decision-note" hint={needsReason ? 'At least 5 characters. Be specific about what to change.' : undefined}>
           <Textarea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </Dialog>
+      {deleting && <RemoveAccountDialog account={deleting} onClose={() => setDeleting(null)} />}
     </>
   );
 }
@@ -122,10 +126,12 @@ function Invitations() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [revoking, setRevoking] = useState<Invitation | null>(null);
+  const [deleting, setDeleting] = useState<Invitation | null>(null);
   const q = useQuery({ queryKey: ['admin', 'invitations', status, page, search], queryFn: () => adminService.invitations({ status: status === 'ALL' ? undefined : status, page, q: search || undefined }), placeholderData: keepPreviousData });
   const refresh = () => qc.invalidateQueries({ queryKey: ['admin', 'invitations'] });
   const resend = useMutation({ mutationFn: (id: string) => adminService.resendInvitation(id), onSuccess: () => { toast.success('Invitation re-sent with a new link'); refresh(); }, onError: (e) => toast.error(errorMessage(e)) });
   const revoke = useMutation({ mutationFn: (id: string) => adminService.revokeInvitation(id), onSuccess: () => { toast.success('Invitation revoked'); setRevoking(null); refresh(); }, onError: (e) => toast.error(errorMessage(e)) });
+  const remove = useMutation({ mutationFn: (id: string) => adminService.deleteInvitation(id), onSuccess: () => { toast.success('Invitation deleted'); setDeleting(null); refresh(); }, onError: (e) => toast.error(errorMessage(e)) });
   return (
     <>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -133,7 +139,7 @@ function Invitations() {
         <Input aria-label="Search invitations" placeholder="Search email" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="sm:max-w-xs" />
       </div>
       {q.isError ? <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} /> : !q.data ? <Skeleton className="h-64 rounded-2xl" /> : q.data.data.length === 0 ? (
-        <EmptyState icon={<Send />} title="No invitations here" description="Invite a teacher by email. They get a single-use link that expires." />
+        <EmptyState icon={<Send />} title="No invitations here" description="Invite a topper by email. They get a single-use link that expires." />
       ) : (
         <>
           <Table>
@@ -153,6 +159,7 @@ function Invitations() {
                         <Button size="sm" variant="ghost" className="text-danger" onClick={() => setRevoking(i)}><XCircle />Revoke</Button>
                       </>
                     )}
+                    {(i.status === 'REVOKED' || i.status === 'EXPIRED') && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleting(i)}><Trash2 />Delete</Button>}
                   </td>
                 </tr>
               ))}
@@ -167,6 +174,13 @@ function Invitations() {
         title={`Revoke the invitation for ${revoking?.email ?? ''}?`}
         description="The link stops working immediately. You can invite this address again later."
         footer={<><Button variant="secondary" onClick={() => setRevoking(null)}>Keep it</Button><Button variant="danger" loading={revoke.isPending} onClick={() => revoking && revoke.mutate(revoking.id)}>Revoke</Button></>}
+      />
+      <Dialog
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={`Delete the invitation for ${deleting?.email ?? ''}?`}
+        description="It is removed from this list permanently. The audit log keeps a record that it was deleted."
+        footer={<><Button variant="secondary" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="danger" loading={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>Delete</Button></>}
       />
     </>
   );
@@ -193,12 +207,12 @@ function InviteDialog({ open, onOpenChange, onSent }: { open: boolean; onOpenCha
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Invite a teacher"
-      description="They receive a single-use link to create a teacher account. Their application still needs your approval before students can book them."
+      title="Invite a topper"
+      description="They receive a single-use link to create a topper account. Their application still needs your approval before students can book them."
       footer={<><Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button><Button disabled={!valid} loading={invite.isPending} onClick={() => invite.mutate()}><Send />Send invitation</Button></>}
     >
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) invite.mutate(); }}>
-        <Field label="Email address" htmlFor="invite-email"><Input type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@example.com" /></Field>
+        <Field label="Email address" htmlFor="invite-email"><Input type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="topper@example.com" /></Field>
         <Field label="Internal note (optional)" htmlFor="invite-note" hint="Only visible to administrators"><Input maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       </form>
     </Dialog>

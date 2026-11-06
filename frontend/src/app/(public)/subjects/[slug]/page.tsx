@@ -25,7 +25,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ slug: 
         <Link href="/subjects" className="hover:text-foreground">Subjects</Link> / <span>{subject.category.name}</span>
       </nav>
       <PageHeader
-        title={`${subject.name} teachers`}
+        title={`${subject.name} toppers`}
         description={subject.description}
         actions={
           <Button asChild variant="secondary">
@@ -40,7 +40,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ slug: 
           ))}
         </div>
       ) : (
-        <EmptyState title={`No ${subject.name} teachers yet`} description="We're onboarding new teachers every week. Browse related subjects or get in touch and we'll help you find someone." action={<Button asChild variant="secondary"><Link href="/subjects">Browse subjects</Link></Button>} />
+        <EmptyState title={`No ${subject.name} toppers yet`} description="We're onboarding new toppers every week. Browse related subjects or get in touch and we'll help you find someone." action={<Button asChild variant="secondary"><Link href="/subjects">Browse subjects</Link></Button>} />
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { DashboardShell } from '@/layouts/dashboard-shell';
 
 const NAV = [
   { href: '/student', label: 'Overview', icon: LayoutDashboard, exact: true },
-  { href: '/student/find', label: 'Find a teacher', icon: Search },
+  { href: '/student/find', label: 'Find a topper', icon: Search },
   { href: '/student/sessions', label: 'Sessions', icon: History },
   { href: '/student/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/student/payments', label: 'Payments & receipts', icon: Receipt },

@@ -198,21 +198,21 @@ export class AdminService {
       where: { id: teacherId },
       include: { user: { select: { id: true } }, _count: { select: { subjects: { where: { isActive: true } }, documents: true } } },
     });
-    if (!t) throw AppError.notFound('Teacher');
-    if (t.userId === admin.id) throw AppError.forbidden('You cannot review your own teacher profile');
-    if (t.approvalStatus === status) throw AppError.unprocessable(ErrorCode.CONFLICT, `This teacher is already ${status.toLowerCase()}`);
+    if (!t) throw AppError.notFound('Topper');
+    if (t.userId === admin.id) throw AppError.forbidden('You cannot review your own topper profile');
+    if (t.approvalStatus === status) throw AppError.unprocessable(ErrorCode.CONFLICT, `This topper is already ${status.toLowerCase()}`);
     if (status === 'APPROVED') {
       if (t.headline.length < 10 || t.bio.length < 50 || t._count.subjects === 0)
         throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'Profile is incomplete: needs a headline, bio and at least one subject');
       if ((t.approvalStatus === 'PENDING' || t.approvalStatus === 'REJECTED') && !t.applicationSubmittedAt)
-        throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'The teacher has not submitted their application yet');
+        throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'The topper has not submitted their application yet');
       const { requireDocuments } = await this.settings.get('onboarding.rules');
       if (requireDocuments && t.approvalStatus !== 'SUSPENDED' && t._count.documents === 0)
         throw AppError.unprocessable(ErrorCode.VALIDATION_FAILED, 'No qualification documents have been uploaded');
     }
     const reason = note?.trim() || null;
     if (status === 'REJECTED' && (!reason || reason.length < 5))
-      throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'Give the teacher a reason for the rejection (at least 5 characters)');
+      throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'Give the topper a reason for the rejection (at least 5 characters)');
     await this.prisma.$transaction(async (tx) => {
       const res = await tx.teacherProfile.updateMany({
         where: { id: teacherId, approvalStatus: t.approvalStatus },
@@ -222,7 +222,7 @@ export class AdminService {
           ...(status === 'REJECTED' ? { rejectionReason: reason } : {}),
         },
       });
-      if (res.count !== 1) throw AppError.conflict(ErrorCode.CONFLICT, 'This teacher was updated by someone else; refresh and try again');
+      if (res.count !== 1) throw AppError.conflict(ErrorCode.CONFLICT, 'This topper was updated by someone else; refresh and try again');
       await this.outbox.publish(tx, { type: 'teacher.approval_changed', aggregateId: teacherId, payload: { teacherId, status, reason: status === 'REJECTED' ? reason : null } });
       await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.teacher_approval_changed', entityType: 'TeacherProfile', entityId: teacherId, metadata: { from: t.approvalStatus, to: status, note: reason } }, tx);
     });
@@ -242,7 +242,7 @@ export class AdminService {
       throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'The confirmation email does not match this account');
     if (user.teacherProfile) {
       const open = await this.prisma.teacherPayout.count({ where: { teacherId: user.teacherProfile.id, status: { in: ['REQUESTED', 'APPROVED'] } } });
-      if (open) throw AppError.unprocessable(ErrorCode.CONFLICT, 'Settle or reject the open payout before removing this teacher');
+      if (open) throw AppError.unprocessable(ErrorCode.CONFLICT, 'Settle or reject the open payout before removing this topper');
     }
     await this.accounts.erase(userId, { actorId: admin.id, actorRole: 'ADMIN', reason });
     return { id: userId, status: 'DELETED' };
@@ -443,5 +443,11 @@ export class AdminService {
     });
     await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.ticket_updated', entityType: 'SupportTicket', entityId: id, metadata: { status } });
     return t;
+  }
+
+  async deleteTicket(admin: AuthUser, id: string) {
+    const res = await this.prisma.supportTicket.deleteMany({ where: { id } });
+    if (res.count !== 1) throw AppError.notFound('Ticket');
+    await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.ticket_deleted', entityType: 'SupportTicket', entityId: id });
   }
 }

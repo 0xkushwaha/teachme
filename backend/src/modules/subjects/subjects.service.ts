@@ -109,4 +109,22 @@ export class SubjectsService {
     await this.invalidate();
     return c;
   }
+
+  /** Only unused subjects can be deleted; anything with toppers or bookings must stay for history. */
+  async remove(id: string) {
+    const s = await this.prisma.subject.findUnique({ where: { id }, include: { _count: { select: { teachers: true, bookings: true } } } });
+    if (!s) throw AppError.notFound('Subject');
+    if (s._count.teachers || s._count.bookings)
+      throw AppError.conflict(ErrorCode.CONFLICT, 'This subject is used by toppers or bookings. Deactivate it instead.');
+    await this.prisma.subject.delete({ where: { id } });
+    await this.invalidate();
+  }
+
+  async removeCategory(id: string) {
+    const c = await this.prisma.subjectCategory.findUnique({ where: { id }, include: { _count: { select: { subjects: true } } } });
+    if (!c) throw AppError.notFound('Category');
+    if (c._count.subjects) throw AppError.conflict(ErrorCode.CONFLICT, 'Delete or move the subjects in this category first.');
+    await this.prisma.subjectCategory.delete({ where: { id } });
+    await this.invalidate();
+  }
 }

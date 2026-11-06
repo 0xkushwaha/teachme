@@ -155,6 +155,17 @@ export class OnboardingService {
     return toInvitationView(await this.prisma.teacherInvitation.findUniqueOrThrow({ where: { id } }));
   }
 
+  /** Only dead invitations can be deleted: revoke a live one first, and accepted ones stay linked to the account. */
+  async removeInvitation(admin: AuthUser, id: string) {
+    const inv = await this.prisma.teacherInvitation.findUnique({ where: { id } });
+    if (!inv) throw AppError.notFound('Invitation');
+    const status = effectiveStatus(inv, new Date());
+    if (status !== 'REVOKED' && status !== 'EXPIRED')
+      throw AppError.unprocessable(ErrorCode.CONFLICT, 'Only revoked or expired invitations can be deleted');
+    await this.prisma.teacherInvitation.delete({ where: { id } });
+    await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.teacher_invitation_deleted', entityType: 'TeacherInvitation', entityId: id });
+  }
+
   // ---------------- Invitations (public) ----------------
 
   async inspect(token: string) {
@@ -361,7 +372,7 @@ export class OnboardingService {
         documents: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, reviewStatus: true, reviewNote: true, reviewedAt: true, createdAt: true, file: { select: FILE_META } } },
       },
     });
-    if (!t) throw AppError.notFound('Teacher');
+    if (!t) throw AppError.notFound('Topper');
     const now = new Date();
     const [byStatus, recent, earned, openPayout, invitation] = await Promise.all([
       this.prisma.booking.groupBy({ by: ['status'], where: { teacherId }, _count: { _all: true } }),

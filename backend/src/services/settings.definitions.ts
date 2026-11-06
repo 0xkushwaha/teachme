@@ -83,11 +83,11 @@ export const settingDefaults: { [K in SettingKey]: SettingValue<K> } = {
 
 export const settingDescriptions: Record<SettingKey, string> = {
   'booking.rules': 'Checkout hold length, calendar slot granularity and permitted session lengths',
-  'pricing.rules': 'Platform fee, tax and teacher rate bounds (basis points, minor units)',
+  'pricing.rules': 'Platform fee, tax and topper rate bounds (basis points, minor units)',
   'policy.cancellation': 'Refund windows for student cancellations',
   'policy.reschedule': 'Reschedule notice and limits',
   'notifications.reminders': 'Reminder offsets before a session and the admin alert inbox',
   'features.flags': 'Feature flags and maintenance banner (teacherRegistration = open applications without an invitation)',
-  'onboarding.rules': 'Teacher invitation lifetime and application document requirements',
-  'payouts.rules': 'Manual teacher payouts: minimum amount and clearing period after a session',
+  'onboarding.rules': 'Topper invitation lifetime and application document requirements',
+  'payouts.rules': 'Manual topper payouts: minimum amount and clearing period after a session',
 };

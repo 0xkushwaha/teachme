@@ -32,13 +32,13 @@ test.describe.serial('student booking journey', () => {
     await expect(page.getByRole('heading', { name: 'Email verified' })).toBeVisible();
   });
 
-  test('2-5. discovers a teacher by subject, books, pays, and gets a verified confirmation', async ({ page }) => {
+  test('2-5. discovers a topper by subject, books, pays, and gets a verified confirmation', async ({ page }) => {
     await stubRazorpayCheckout(page);
     await login(page, email, password);
     await expect(page).toHaveURL(/\/student/);
 
     await page.goto('/subjects/physics');
-    await expect(page.getByRole('heading', { name: 'Physics teachers' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Physics toppers' })).toBeVisible();
     await page.getByRole('link', { name: /Ishaan Rao/ }).click();
     await expect(page.getByRole('heading', { name: 'Ishaan Rao' })).toBeVisible();
 
@@ -85,7 +85,7 @@ test.describe.serial('student booking journey', () => {
     expect(reminders.length).toBeGreaterThan(0);
   });
 
-  test('9. teacher sees the booking with student details', async ({ page }) => {
+  test('9. topper sees the booking with student details', async ({ page }) => {
     await login(page, 'e2e.teacher@teachme.test', 'E2e-Teacher-Pass1', `/teacher/bookings/${bookingId}`);
     await expect(page.getByText('Riya Sen')).toBeVisible();
     await expect(page.getByText('Confirmed', { exact: true })).toBeVisible();

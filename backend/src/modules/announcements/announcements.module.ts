@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Injectable, Module, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Injectable, Module, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AnnouncementAudience, Prisma } from '@prisma/client';
 import { Transform } from 'class-transformer';
@@ -79,6 +79,12 @@ export class AnnouncementsService {
     await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.announcement_archived', entityType: 'Announcement', entityId: id });
     return { archived: true };
   }
+
+  async remove(admin: AuthUser, id: string) {
+    const res = await this.prisma.announcement.deleteMany({ where: { id } });
+    if (res.count !== 1) throw AppError.notFound('Announcement');
+    await this.audit.record({ actorId: admin.id, actorRole: 'ADMIN', action: 'admin.announcement_deleted', entityType: 'Announcement', entityId: id });
+  }
 }
 
 @ApiTags('announcements')
@@ -103,6 +109,8 @@ export class AdminAnnouncementsController {
   @Patch(':id') update(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AnnouncementDto) { return this.announcements.update(a, id, dto); }
   @HttpCode(200)
   @Post(':id/archive') archive(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string) { return this.announcements.archive(a, id); }
+  @HttpCode(204)
+  @Delete(':id') remove(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string) { return this.announcements.remove(a, id); }
 }
 
 @Module({ controllers: [AnnouncementsController, AdminAnnouncementsController], providers: [AnnouncementsService] })

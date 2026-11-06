@@ -61,7 +61,7 @@ function Application() {
 
   return (
     <>
-      <PageHeader eyebrow="Teacher onboarding" title="Application & documents" description="Everything an administrator needs to approve your profile." />
+      <PageHeader eyebrow="Topper onboarding" title="Application & documents" description="Everything an administrator needs to approve your profile." />
       {welcome && <Alert tone="success" title="Your account is ready" className="mb-6">Work through the checklist below, then submit your application for review.</Alert>}
       {a.status === 'APPROVED' && <Alert tone="success" title="You’re approved" className="mb-6">Students can find and book you. Keep your documents up to date here.</Alert>}
       {a.status === 'REJECTED' && (

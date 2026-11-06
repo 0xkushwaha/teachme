@@ -7,15 +7,15 @@ import { Reveal } from '@/components/motion/reveal';
 export const metadata: Metadata = { title: 'How it works' };
 
 const STUDENT = [
-  ['Find a teacher', 'Browse by subject or search. Every profile shows qualifications, languages, hourly rate and live availability.'],
+  ['Find a topper', 'Browse by subject or search. Every profile shows qualifications, languages, hourly rate and live availability.'],
   ['Choose a time', 'Pick a slot in your own timezone. We reserve it for you for a few minutes while you pay — nobody else can take it.'],
   ['Pay securely', 'Pay with UPI, card or netbanking via Razorpay. Your booking is confirmed only once our server verifies the payment with Razorpay.'],
-  ['Get your Meet link', 'Your teacher’s Google Calendar creates the session and a Google Meet link, which appears on your booking and in your email.'],
+  ['Get your Meet link', 'Your topper’s Google Calendar creates the session and a Google Meet link, which appears on your booking and in your email.'],
   ['Get reminded', 'We email and notify you before the session (24 hours and 1 hour ahead by default).'],
   ['Change plans if you need to', 'Reschedule or cancel from the booking page. You always see the refund you’d receive before confirming.'],
 ];
 const TEACHER = [
-  ['Apply', 'Create a teacher account and complete your profile, subjects and rates. Our team reviews every application.'],
+  ['Apply', 'Create a topper account and complete your profile, subjects and rates. Our team reviews every application.'],
   ['Set your hours', 'Define weekly working hours, breaks, holidays, session lengths, buffer time and minimum notice.'],
   ['Connect Google Calendar', 'Sessions are added to your calendar with a Meet link automatically. We only request permission to manage events.'],
   ['Teach', 'See every upcoming session, the student’s goals and notes, and join from your dashboard.'],
@@ -43,10 +43,10 @@ export default function HowItWorks() {
       <PageHeader eyebrow="How it works" title="Live lessons without the logistics" description="TeachMe handles scheduling, payments, calendar invites, Meet links and reminders so you can focus on learning." />
       <div className="grid gap-12 md:grid-cols-2">
         <section><h2 className="mb-6 text-lg font-semibold">For students</h2><Steps items={STUDENT} /></section>
-        <section><h2 className="mb-6 text-lg font-semibold">For teachers</h2><Steps items={TEACHER} /></section>
+        <section><h2 className="mb-6 text-lg font-semibold">For toppers</h2><Steps items={TEACHER} /></section>
       </div>
       <div className="mt-14 flex flex-wrap gap-3">
-        <Button asChild size="lg"><Link href="/teachers">Find a teacher</Link></Button>
+        <Button asChild size="lg"><Link href="/teachers">Find a topper</Link></Button>
         <Button asChild size="lg" variant="secondary"><Link href="/register?role=TEACHER">Apply to teach</Link></Button>
       </div>
     </div>

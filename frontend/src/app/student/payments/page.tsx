@@ -18,7 +18,7 @@ export default function StudentPayments() {
     <>
       <PageHeader title="Payments & receipts" description="Every payment for your sessions, with refunds and downloadable receipts." />
       {q.isError ? <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} /> : !q.data ? <Skeleton className="h-64 rounded-2xl" /> : q.data.data.length === 0 ? (
-        <EmptyState icon={<Receipt />} title="No payments yet" description="Payments appear here after you book and pay for a session." action={<Button asChild><Link href="/student/find">Find a teacher</Link></Button>} />
+        <EmptyState icon={<Receipt />} title="No payments yet" description="Payments appear here after you book and pay for a session." action={<Button asChild><Link href="/student/find">Find a topper</Link></Button>} />
       ) : (
         <>
           <Table>

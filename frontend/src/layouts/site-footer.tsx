@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { Logo } from '@/components/logo';
 
 const COLS = [
-  { title: 'Learn', links: [['Browse subjects', '/subjects'], ['Find a teacher', '/teachers'], ['How it works', '/how-it-works'], ['Pricing & fees', '/pricing']] },
-  { title: 'Teach', links: [['Apply to teach', '/register?role=TEACHER'], ['Teacher FAQ', '/faq#teachers'], ['Teacher login', '/login']] },
+  { title: 'Learn', links: [['Browse subjects', '/subjects'], ['Find a topper', '/teachers'], ['How it works', '/how-it-works'], ['Pricing & fees', '/pricing']] },
+  { title: 'Teach', links: [['Apply to teach', '/register?role=TEACHER'], ['Topper FAQ', '/faq#teachers'], ['Topper login', '/login']] },
   { title: 'Support', links: [['Help & FAQ', '/faq'], ['Contact support', '/contact'], ['Report a booking issue', '/contact?category=BOOKING_ISSUE']] },
   { title: 'Legal', links: [['Terms of service', '/legal/terms'], ['Privacy policy', '/legal/privacy'], ['Cancellation & refunds', '/legal/cancellation']] },
 ];
@@ -14,7 +14,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.3fr_repeat(4,1fr)]">
         <div>
           <Logo />
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">Live one-to-one lessons with verified teachers, booked in their real availability.</p>
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">Live one-to-one lessons with verified toppers, booked in their real availability.</p>
         </div>
         {COLS.map((c) => (
           <div key={c.title}>
