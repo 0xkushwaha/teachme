@@ -26,7 +26,7 @@ export default function AdminFinance() {
     <>
       <PageHeader
         title="Finance reports"
-        description="Money collected from students, refunds, platform revenue and what is owed to teachers."
+        description="Money collected from students, refunds, platform revenue and what is owed to toppers."
         actions={<Button asChild variant="secondary" disabled={!valid}><a href={adminService.financeCsvUrl(fromIso, toIso)}><Download />Export CSV</a></Button>}
       />
       <Card className="mb-6 p-4">

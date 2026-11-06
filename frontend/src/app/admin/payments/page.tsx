@@ -11,7 +11,7 @@ import { EmptyState, ErrorState, PageHeader, Pagination, Skeleton, StatusBadge, 
 import { useAuth } from '@/hooks/use-auth';
 import { errorMessage } from '@/lib/api';
 import { adminService } from '@/services/admin';
-import { formatDateTime, formatMoney } from '@/utils/format';
+import { formatDateTime, formatMoney, refundReasonLabel } from '@/utils/format';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Payments() {
@@ -43,7 +43,7 @@ function Payments() {
                   <td><Link href={`/admin/bookings/${r.bookingId}`} className="font-mono text-[12px] hover:text-accent">{r.providerRefundId ?? r.id.slice(0, 8)}</Link></td>
                   <td className="tabular-nums">{formatMoney(r.amountMinor)}</td>
                   <td><StatusBadge status={r.status} />{r.failureReason && <p className="text-[11px] text-danger">{r.failureReason}</p>}</td>
-                  <td className="max-w-xs truncate text-[13px] text-muted-foreground">{r.reason}</td>
+                  <td className="max-w-xs truncate text-[13px] text-muted-foreground">{refundReasonLabel(r.reason)}</td>
                   <td className="text-[13px]">{formatDateTime(r.createdAt, timezone)}</td>
                   <td className="text-right">{r.status !== 'PROCESSED' && <Button size="sm" variant="ghost" onClick={() => retryRefund.mutate(r.id)}>Retry</Button>}</td>
                 </tr>))}
