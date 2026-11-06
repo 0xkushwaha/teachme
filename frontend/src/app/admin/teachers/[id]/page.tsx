@@ -80,7 +80,7 @@ export default function AdminTeacherDetail({ params }: { params: Promise<{ id: s
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Documents teacherId={id} docs={t.documents} onChange={refresh} />
           <Card>
             <CardHeader title="Profile" description={t.applicationSubmittedAt ? `Submitted ${formatDateTime(t.applicationSubmittedAt, zone)}` : undefined} />
@@ -106,7 +106,7 @@ export default function AdminTeacherDetail({ params }: { params: Promise<{ id: s
             </div>
           </Card>
         </div>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card>
             <CardHeader title="Recent bookings" action={<Button asChild size="sm" variant="ghost"><Link href={`/admin/bookings?teacherId=${id}`}>All</Link></Button>} />
             {t.recentBookings.length ? (

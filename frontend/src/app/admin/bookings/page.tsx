@@ -23,7 +23,7 @@ function AdminBookings() {
   const q = useQuery({ queryKey: ['admin', 'bookings', status, search, teacherId, page], queryFn: () => adminService.bookings({ status: status || undefined, q: search.trim() || undefined, teacherId, page }), placeholderData: keepPreviousData });
   return (
     <>
-      <PageHeader title="Bookings" description={teacherId ? <>Bookings for one teacher. <Link href="/admin/bookings" className="underline underline-offset-4">Show all</Link></> : 'Every booking across the platform, newest first.'} actions={
+      <PageHeader title="Bookings" description={teacherId ? <>Bookings for one topper. <Link href="/admin/bookings" className="underline underline-offset-4">Show all</Link></> : 'Every booking across the platform, newest first.'} actions={
         <>
           <Input aria-label="Search bookings" placeholder="Student, teacher, subject or booking ID" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="w-full sm:w-72" />
           <Select aria-label="Status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="w-full sm:w-52">

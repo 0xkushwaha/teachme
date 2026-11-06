@@ -62,7 +62,15 @@ export function DashboardShell({ role, nav, children }: { role: Role; nav: NavIt
   const tabTitle = section ? `${section.label} · TeachMe` : null;
   const title = tabTitle ? <title>{tabTitle}</title> : null;
   useEffect(() => {
-    if (tabTitle) document.title = tabTitle;
+    if (!tabTitle) return;
+    const apply = () => {
+      if (document.title !== tabTitle) document.title = tabTitle;
+    };
+    apply();
+    // Next.js can restore its default title after this effect, so keep ours applied.
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [tabTitle]);
 
   if (loading || !user) {

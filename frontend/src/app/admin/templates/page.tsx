@@ -34,7 +34,7 @@ export default function Templates() {
         <nav aria-label="Templates" className="space-y-1">
           {list.data.map((t: any) => (
             <button key={t.key} onClick={() => setKey(t.key)} className={cn('w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted', current?.key === t.key && 'bg-accent-soft text-accent')}>
-              <span className="flex items-center justify-between gap-2"><span className="font-medium">{t.key.replace(/_/g, ' ')}</span>{t.customized && <Badge tone="accent">edited</Badge>}</span>
+              <span className="flex items-center justify-between gap-2"><span className="font-medium">{t.key.replace(/_/g, ' ').replace(/teacher/g, 'topper')}</span>{t.customized && <Badge tone="accent">edited</Badge>}</span>
               <span className="block text-[12px] text-muted-foreground">{t.description}</span>
             </button>
           ))}

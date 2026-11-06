@@ -61,6 +61,11 @@ Steps:
    It prompts for the password without showing it (10+ characters with upper case, lower case and a number). Use an email address you control: password resets and admin alerts go there. Afterwards you can set the database's access list to empty in the Render dashboard.
 4. In Razorpay test mode, add the webhook `https://<api>.onrender.com/api/v1/payments/razorpay/webhook` and put its secret in `RAZORPAY_WEBHOOK_SECRET`.
 5. Sign in as the admin, add subjects, invite a teacher, then register as a student and book with Razorpay's test cards.
+6. Optional sample data, for a demo. It adds subjects, approved toppers, one pending application and students, all sharing the password you choose. It creates no admin, and the accounts use `@example.com`, so their emails go nowhere:
+   ```bash
+   cd backend
+   DATABASE_URL='<External Database URL>' SEED_PASSWORD='<a password you choose>' npm run db:seed:demo
+   ```
 
 Self-hosted VM path: copy `infrastructure/deployment/backend.env.example` → `backend.env` and `.env.example` → `.env` on the server (both git-ignored), then use `docker-compose.prod.yml`.
 After the first `migrate` run, create the first admin (interactive, so `-it`; see [First admin](#first-admin)):

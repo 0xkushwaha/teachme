@@ -65,6 +65,21 @@ export function initials(name: string) {
     .join('');
 }
 
+const REFUND_RULE_LABEL: Record<string, string> = {
+  FULL_WINDOW: 'Full refund window',
+  PARTIAL_WINDOW: 'Partial refund window',
+  NO_REFUND_WINDOW: 'No refund window',
+  TEACHER_CANCELLED: 'Topper cancelled',
+  ADMIN_OVERRIDE: 'Admin decision',
+};
+
+/** Refund reasons are stored as `RULE: detail`; shows the rule in words. */
+export function refundReasonLabel(reason: string) {
+  const [rule, ...detail] = reason.split(': ');
+  const label = REFUND_RULE_LABEL[rule];
+  return label ? [label, ...detail].join(': ') : reason;
+}
+
 export const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: 'Awaiting payment',
   CONFIRMED: 'Confirmed',

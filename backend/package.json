@@ -23,6 +23,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
+    "db:seed:demo": "SEED_DEMO=true ts-node --transpile-only prisma/seed.ts",
     "admin:create": "node dist/cli/create-admin.js",
     "admin:create:dev": "ts-node --transpile-only src/cli/create-admin.ts",
     "openapi": "ts-node --transpile-only scripts/export-openapi.ts"

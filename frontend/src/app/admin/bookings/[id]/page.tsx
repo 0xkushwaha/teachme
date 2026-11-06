@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { errorMessage } from '@/lib/api';
 import { meetingService } from '@/services/bookings';
 import { adminService } from '@/services/admin';
-import { formatDateTime, formatMoney, formatRange, STATUS_LABEL } from '@/utils/format';
+import { formatDateTime, formatMoney, formatRange, STATUS_LABEL, refundReasonLabel } from '@/utils/format';
 
 export default function AdminBookingDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -61,7 +61,7 @@ export default function AdminBookingDetail({ params }: { params: Promise<{ id: s
                 {b.payment.discrepancy && <><dt className="text-danger">Discrepancy</dt><dd className="text-danger">{b.payment.discrepancy}</dd></>}
               </dl>
             )}
-            {b.refunds.map((r) => <p key={r.id} className="text-sm">Refund {formatMoney(r.amountMinor)} · <StatusBadge status={r.status} /> · {r.reason}</p>)}
+            {b.refunds.map((r) => <p key={r.id} className="text-sm">Refund {formatMoney(r.amountMinor)} · <StatusBadge status={r.status} /> · {refundReasonLabel(r.reason)}</p>)}
           </div>
         </Card>
         <Card className="lg:col-span-2">

@@ -1,11 +1,17 @@
-/* Development seed. Idempotent: safe to run repeatedly. Never run against production. */
+/*
+ * Development seed. Idempotent: safe to run repeatedly. Never run against production.
+ * With SEED_DEMO=true it loads the same catalogue and sample people onto a hosted test site: it needs
+ * SEED_PASSWORD, creates no admin, and uses @example.com addresses so no email reaches a real inbox.
+ */
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
 // Development-only credentials (documented in README "Seed accounts"). Override with SEED_PASSWORD.
+const DEMO = process.env.SEED_DEMO === 'true';
 const PASSWORD = process.env.SEED_PASSWORD ?? 'TeachMe-Dev-2026';
+const email = (address: string) => (DEMO ? address.replace('@teachme.dev', '@example.com').replace('pending.teacher', 'pending.topper') : address);
 
 const categories = [
   { slug: 'mathematics', name: 'Mathematics', sortOrder: 1 },
@@ -170,6 +176,7 @@ function slug(name: string) {
 
 async function main() {
   if (process.env.NODE_ENV === 'production') throw new Error('Refusing to seed a production database');
+  if (DEMO && !process.env.SEED_PASSWORD) throw new Error('SEED_DEMO needs SEED_PASSWORD: the development password must not be used on a hosted site');
   const passwordHash = await argon2.hash(PASSWORD, { type: argon2.argon2id, memoryCost: 19_456, timeCost: 2, parallelism: 1 });
   const now = new Date();
 
@@ -182,16 +189,18 @@ async function main() {
   }
   const subj = new Map((await prisma.subject.findMany()).map((s) => [s.slug, s.id]));
 
-  await prisma.user.upsert({
-    where: { email: 'admin@teachme.dev' },
-    create: { email: 'admin@teachme.dev', passwordHash, fullName: 'Platform Admin', role: 'ADMIN', emailVerifiedAt: now, privacyConsentAt: now },
-    update: { role: 'ADMIN', status: 'ACTIVE' },
-  });
+  if (!DEMO) {
+    await prisma.user.upsert({
+      where: { email: 'admin@teachme.dev' },
+      create: { email: 'admin@teachme.dev', passwordHash, fullName: 'Platform Admin', role: 'ADMIN', emailVerifiedAt: now, privacyConsentAt: now },
+      update: { role: 'ADMIN', status: 'ACTIVE' },
+    });
+  }
 
   for (const t of teachers) {
     const user = await prisma.user.upsert({
-      where: { email: t.email },
-      create: { email: t.email, passwordHash, fullName: t.name, role: 'TEACHER', timezone: t.timezone, emailVerifiedAt: now, privacyConsentAt: now },
+      where: { email: email(t.email) },
+      create: { email: email(t.email), passwordHash, fullName: t.name, role: 'TEACHER', timezone: t.timezone, emailVerifiedAt: now, privacyConsentAt: now },
       update: { fullName: t.name, timezone: t.timezone },
     });
     const profileData = {
@@ -227,8 +236,8 @@ async function main() {
   }
 
   const pending = await prisma.user.upsert({
-    where: { email: pendingTeacher.email },
-    create: { email: pendingTeacher.email, passwordHash, fullName: pendingTeacher.name, role: 'TEACHER', emailVerifiedAt: now, privacyConsentAt: now },
+    where: { email: email(pendingTeacher.email) },
+    create: { email: email(pendingTeacher.email), passwordHash, fullName: pendingTeacher.name, role: 'TEACHER', emailVerifiedAt: now, privacyConsentAt: now },
     update: {},
   });
   await prisma.teacherProfile.upsert({
@@ -239,9 +248,9 @@ async function main() {
 
   for (const s of students) {
     await prisma.user.upsert({
-      where: { email: s.email },
+      where: { email: email(s.email) },
       create: {
-        email: s.email, passwordHash, fullName: s.name, role: 'STUDENT', emailVerifiedAt: now, privacyConsentAt: now,
+        email: email(s.email), passwordHash, fullName: s.name, role: 'STUDENT', emailVerifiedAt: now, privacyConsentAt: now,
         studentProfile: { create: { gradeLevel: s.grade, learningGoals: s.goals } },
       },
       update: {},
