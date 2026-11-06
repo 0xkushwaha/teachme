@@ -20,6 +20,22 @@ export class ApiError extends Error {
   }
 }
 
+const GATEWAY_STATUSES = new Set([502, 503, 504]);
+
+/** The API is unreachable behind the proxy, typically because it is restarting or waking from sleep. */
+export function isGatewayError(err: unknown) {
+  return err instanceof ApiError && GATEWAY_STATUSES.has(err.status);
+}
+
+const WAKE_INTERVAL_MS = 30_000;
+let lastWakeAt = 0;
+/** Asks the website's server to wake the API, at most once per interval across all requests. */
+function wakeApi() {
+  if (Date.now() - lastWakeAt < WAKE_INTERVAL_MS) return;
+  lastWakeAt = Date.now();
+  void fetch('/wake-api', { cache: 'no-store' }).catch(() => undefined);
+}
+
 function readCookie(name: string) {
   if (typeof document === 'undefined') return undefined;
   return document.cookie
@@ -96,7 +112,10 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   const json = text ? safeJson(text) : undefined;
   if (!res.ok) {
     const err = (json as { error?: { code?: string; message?: string; details?: unknown } })?.error;
-    throw new ApiError(res.status, err?.code ?? 'HTTP_ERROR', err?.message ?? `Request failed (${res.status})`, err?.details);
+    const isGateway = GATEWAY_STATUSES.has(res.status);
+    if (isGateway) wakeApi();
+    const fallback = isGateway ? 'The server is starting up. Please try again in a minute.' : `Request failed (${res.status})`;
+    throw new ApiError(res.status, err?.code ?? 'HTTP_ERROR', err?.message ?? fallback, err?.details);
   }
   return json as T;
 }
