@@ -1,6 +1,6 @@
 'use client';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Megaphone, Plus } from 'lucide-react';
+import { Megaphone, Plus, Trash2 } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -12,7 +12,7 @@ import { errorMessage } from '@/lib/api';
 import { adminService, type Announcement, type AnnouncementInput } from '@/services/admin';
 import { browserTimezone, formatDateTime } from '@/utils/format';
 
-const AUDIENCE: Record<Announcement['audience'], string> = { ALL: 'Everyone', STUDENT: 'Students', TEACHER: 'Teachers' };
+const AUDIENCE: Record<Announcement['audience'], string> = { ALL: 'Everyone', STUDENT: 'Students', TEACHER: 'Toppers' };
 const toLocal = (iso?: string | null) => (iso ? DateTime.fromISO(iso).toFormat("yyyy-MM-dd'T'HH:mm") : '');
 const fromLocal = (v: string) => (v ? DateTime.fromISO(v).toISO()! : undefined);
 
@@ -31,15 +31,21 @@ export default function AdminAnnouncements() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Announcement | 'new' | null>(null);
   const [archiving, setArchiving] = useState<Announcement | null>(null);
+  const [deleting, setDeleting] = useState<Announcement | null>(null);
   const q = useQuery({ queryKey: ['admin', 'announcements', view, page], queryFn: () => adminService.announcements({ view, page }), placeholderData: keepPreviousData });
   const archive = useMutation({
     mutationFn: (id: string) => adminService.archiveAnnouncement(id),
     onSuccess: () => { toast.success('Announcement archived'); setArchiving(null); qc.invalidateQueries({ queryKey: ['admin', 'announcements'] }); },
     onError: (e) => toast.error(errorMessage(e)),
   });
+  const remove = useMutation({
+    mutationFn: (id: string) => adminService.deleteAnnouncement(id),
+    onSuccess: () => { toast.success('Announcement deleted'); setDeleting(null); qc.invalidateQueries({ queryKey: ['admin', 'announcements'] }); qc.invalidateQueries({ queryKey: ['announcements'] }); },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
   return (
     <>
-      <PageHeader title="Announcements" description="Short notices shown at the top of student and teacher dashboards." actions={<Button onClick={() => setEditing('new')}><Plus />New announcement</Button>} />
+      <PageHeader title="Announcements" description="Short notices shown at the top of student and topper dashboards." actions={<Button onClick={() => setEditing('new')}><Plus />New announcement</Button>} />
       <Tabs className="mb-4" value={view} onValueChange={(v) => { setView(v); setPage(1); }} items={[{ value: 'active', label: 'Current & scheduled' }, { value: 'archived', label: 'Archived' }]} />
       {q.isError ? <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} /> : !q.data ? <Skeleton className="h-48 rounded-2xl" /> : q.data.data.length === 0 ? (
         <EmptyState icon={<Megaphone />} title="No announcements" description="Use announcements for schedule changes, policy updates or planned maintenance." />
@@ -56,12 +62,11 @@ export default function AdminAnnouncements() {
                       <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{a.body}</p>
                       <p className="mt-2 text-[12.5px] text-muted-foreground">From {formatDateTime(a.startsAt, zone)}{a.endsAt ? ` until ${formatDateTime(a.endsAt, zone)}` : ' · no end date'}</p>
                     </div>
-                    {!a.archivedAt && (
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => setEditing(a)}>Edit</Button>
-                        <Button size="sm" variant="ghost" className="text-danger" onClick={() => setArchiving(a)}>Archive</Button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      {!a.archivedAt && <Button size="sm" variant="secondary" onClick={() => setEditing(a)}>Edit</Button>}
+                      {!a.archivedAt && <Button size="sm" variant="ghost" onClick={() => setArchiving(a)}>Archive</Button>}
+                      <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleting(a)}><Trash2 />Delete</Button>
+                    </div>
                   </div>
                 </Card>
               );
@@ -77,6 +82,13 @@ export default function AdminAnnouncements() {
         title={`Archive “${archiving?.title ?? ''}”?`}
         description="It disappears from dashboards immediately."
         footer={<><Button variant="secondary" onClick={() => setArchiving(null)}>Cancel</Button><Button variant="danger" loading={archive.isPending} onClick={() => archiving && archive.mutate(archiving.id)}>Archive</Button></>}
+      />
+      <Dialog
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={`Delete “${deleting?.title ?? ''}”?`}
+        description="It is removed permanently, including from the archive. This cannot be undone."
+        footer={<><Button variant="secondary" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="danger" loading={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>Delete</Button></>}
       />
     </>
   );

@@ -48,11 +48,11 @@ export class BookingsService {
       include: { user: { select: { id: true, status: true } }, subjects: { where: { subjectId: dto.subjectId }, include: { subject: true } } },
     });
     if (!teacher || teacher.approvalStatus !== 'APPROVED' || teacher.user.status !== 'ACTIVE')
-      throw AppError.unprocessable(ErrorCode.TEACHER_UNAVAILABLE, 'This teacher is not currently accepting bookings');
+      throw AppError.unprocessable(ErrorCode.TEACHER_UNAVAILABLE, 'This topper is not currently accepting bookings');
     if (teacher.userId === student.id) throw AppError.unprocessable(ErrorCode.BOOKING_POLICY_VIOLATION, 'You cannot book yourself');
     const ts = teacher.subjects[0];
     if (!ts || !ts.isActive || !ts.subject.isActive)
-      throw AppError.unprocessable(ErrorCode.TEACHER_UNAVAILABLE, 'This teacher does not teach that subject');
+      throw AppError.unprocessable(ErrorCode.TEACHER_UNAVAILABLE, 'This topper does not teach that subject');
 
     const [rules, pricing, cancellation, reschedule] = await Promise.all([
       this.settings.get('booking.rules'),

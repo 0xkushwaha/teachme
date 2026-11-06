@@ -99,6 +99,12 @@ export class AdminController {
     await this.audit.record({ actorId: a.id, actorRole: 'ADMIN', action: 'admin.subject_updated', entityType: 'Subject', entityId: id });
     return s;
   }
+  @Delete('subjects/:id')
+  @HttpCode(204)
+  async deleteSubject(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    await this.subjects.remove(id);
+    await this.audit.record({ actorId: a.id, actorRole: 'ADMIN', action: 'admin.subject_deleted', entityType: 'Subject', entityId: id });
+  }
   @Get('categories') categories() { return this.subjects.categories(); }
   @Post('categories')
   async createCategory(@CurrentUser() a: AuthUser, @Body() dto: UpsertCategoryDto) {
@@ -111,6 +117,12 @@ export class AdminController {
     const c = await this.subjects.updateCategory(id, dto);
     await this.audit.record({ actorId: a.id, actorRole: 'ADMIN', action: 'admin.category_updated', entityType: 'SubjectCategory', entityId: id });
     return c;
+  }
+  @Delete('categories/:id')
+  @HttpCode(204)
+  async deleteCategory(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    await this.subjects.removeCategory(id);
+    await this.audit.record({ actorId: a.id, actorRole: 'ADMIN', action: 'admin.category_deleted', entityType: 'SubjectCategory', entityId: id });
   }
 
   // bookings
@@ -180,4 +192,7 @@ export class AdminController {
   @Get('support-tickets') tickets(@Query() q: TicketsQuery) { return this.admin.tickets(q); }
   @Patch('support-tickets/:id')
   ticket(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTicketDto) { return this.admin.updateTicket(a, id, dto.status, dto.adminNote); }
+  @Delete('support-tickets/:id')
+  @HttpCode(204)
+  deleteTicket(@CurrentUser() a: AuthUser, @Param('id', ParseUUIDPipe) id: string) { return this.admin.deleteTicket(a, id); }
 }

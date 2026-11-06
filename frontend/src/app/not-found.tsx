@@ -12,7 +12,7 @@ export default function NotFound() {
         <p className="mt-2 text-muted-foreground">The link may be broken, or the page may have moved.</p>
         <div className="mt-6 flex justify-center gap-2">
           <Button asChild><Link href="/">Go home</Link></Button>
-          <Button asChild variant="secondary"><Link href="/teachers">Find a teacher</Link></Button>
+          <Button asChild variant="secondary"><Link href="/teachers">Find a topper</Link></Button>
         </div>
       </div>
     </main>

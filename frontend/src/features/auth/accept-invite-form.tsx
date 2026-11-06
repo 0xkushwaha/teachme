@@ -50,7 +50,7 @@ export function AcceptInviteForm() {
 
   return (
     <AuthCard
-      title="Join TeachMe as a teacher"
+      title="Join TeachMe as a topper"
       description={<>You were invited as <strong className="text-foreground">{invite.data.email}</strong>. This link expires {formatDateTime(invite.data.expiresAt, browserTimezone())}.</>}
       footer={<>Already have an account? <Link href="/login" className="font-medium text-accent hover:underline">Log in</Link></>}
     >
@@ -67,7 +67,7 @@ export function AcceptInviteForm() {
           {e.acceptTerms && <p role="alert" className="mt-1 text-[12.5px] text-danger">{e.acceptTerms.message}</p>}
         </div>
         <p className="text-[13px] text-muted-foreground">Next you&apos;ll complete your profile and upload your qualifications. Our team reviews every application before students can book you.</p>
-        <Button type="submit" size="lg" className="w-full" loading={accept.isPending}>Create teacher account</Button>
+        <Button type="submit" size="lg" className="w-full" loading={accept.isPending}>Create topper account</Button>
       </form>
     </AuthCard>
   );

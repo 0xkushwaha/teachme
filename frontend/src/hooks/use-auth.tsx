@@ -2,7 +2,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
-import { ApiError } from '@/lib/api';
+import { ApiError, isGatewayError } from '@/lib/api';
 import { authService } from '@/services/auth';
 import type { Me, Role } from '@/types/api';
 import { browserTimezone } from '@/utils/format';
@@ -32,7 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     },
     staleTime: 60_000,
-    retry: false,
+    // Stay in the loading state while the API wakes, so a signed-in user isn't treated as signed out.
+    retry: (count, err) => isGatewayError(err) && count < 30,
   });
 
   const logout = useCallback(async () => {

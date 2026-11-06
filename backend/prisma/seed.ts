@@ -90,7 +90,7 @@ const teachers: SeedTeacher[] = [
   {
     email: 'priya.nair@teachme.dev', name: 'Priya Nair', timezone: 'Asia/Kolkata', years: 10, languages: ['English', 'Malayalam'],
     headline: 'Biology for curious minds — CBSE, IB and NEET',
-    bio: 'Former IB Biology teacher with a decade in the classroom across Kochi and Dubai. I love turning dense textbook chapters into diagrams students can redraw from memory. For NEET aspirants I combine concept sessions with timed MCQ practice and a running error log, so revision targets exactly what you keep getting wrong.',
+    bio: 'Former IB Biology topper with a decade in the classroom across Kochi and Dubai. I love turning dense textbook chapters into diagrams students can redraw from memory. For NEET aspirants I combine concept sessions with timed MCQ practice and a running error log, so revision targets exactly what you keep getting wrong.',
     qualifications: [{ title: 'M.Sc. Zoology', institution: 'University of Kerala', year: 2012 }, { title: 'IB Biology certification', institution: 'International Baccalaureate', year: 2016 }],
     subjects: [{ slug: 'biology', rate: 1000_00, levels: 'Class 9-12, IB, NEET' }],
     durations: [45, 60], buffer: 10, hours: [[1, 15, 19], [2, 15, 19], [3, 15, 19], [5, 15, 19]],
@@ -106,14 +106,14 @@ const teachers: SeedTeacher[] = [
   {
     email: 'james.whitfield@teachme.dev', name: 'James Whitfield', timezone: 'Europe/London', years: 15, languages: ['English'],
     headline: 'CELTA-qualified English and IELTS tutor, 15 years experience',
-    bio: 'I am a British English teacher based in Manchester. I have prepared over a thousand candidates for IELTS, with most of my long-term students improving by at least one band. Sessions are relaxed but focused: we practise under exam conditions, then unpick your answers line by line so you understand exactly what examiners reward.',
+    bio: 'I am a British English topper based in Manchester. I have prepared over a thousand candidates for IELTS, with most of my long-term students improving by at least one band. Sessions are relaxed but focused: we practise under exam conditions, then unpick your answers line by line so you understand exactly what examiners reward.',
     qualifications: [{ title: 'CELTA', institution: 'Cambridge English', year: 2010 }, { title: 'BA English Literature', institution: 'University of Leeds', year: 2008 }],
     subjects: [{ slug: 'ielts', rate: 2000_00, levels: 'Band 5.5 to 8' }, { slug: 'english', rate: 1600_00, levels: 'Intermediate to Advanced' }],
     durations: [45, 60], buffer: 15, hours: [[1, 8, 12], [2, 8, 12], [3, 8, 12], [4, 8, 12], [5, 8, 12]],
   },
   {
     email: 'lucia.fernandez@teachme.dev', name: 'Lucía Fernández', timezone: 'Europe/Madrid', years: 11, languages: ['Spanish', 'English'],
-    headline: 'Native Spanish teacher — conversation first, grammar that sticks',
+    headline: 'Native Spanish topper — conversation first, grammar that sticks',
     bio: 'Soy profesora de español from Valencia, certified by Instituto Cervantes. I teach adults and teenagers who want to actually speak, not just pass tests — although my DELE candidates do pass. We will talk about things you care about from the very first class, and I will send a short personalised vocabulary list after each lesson.',
     qualifications: [{ title: 'Acreditación de examinadores DELE', institution: 'Instituto Cervantes', year: 2015 }, { title: 'Grado en Filología Hispánica', institution: 'Universitat de València', year: 2012 }],
     subjects: [{ slug: 'spanish', rate: 1400_00, levels: 'A1 to C1' }],
@@ -129,7 +129,7 @@ const teachers: SeedTeacher[] = [
   },
   {
     email: 'ananya.bose@teachme.dev', name: 'Ananya Bose', timezone: 'Asia/Kolkata', years: 14, languages: ['English', 'Bengali', 'Hindi'],
-    headline: 'Trinity-certified piano teacher for all ages',
+    headline: 'Trinity-certified piano topper for all ages',
     bio: 'I have taught piano for fourteen years and hold a Trinity College London teaching diploma. Lessons balance technique, reading and pieces you genuinely want to play — from Bach to Bollywood. Online lessons work best with a keyboard or piano and a phone camera positioned to see your hands; I will help you set this up in the first session.',
     qualifications: [{ title: 'ATCL Piano Teaching', institution: 'Trinity College London', year: 2012 }],
     subjects: [{ slug: 'piano', rate: 1000_00, levels: 'Beginner to Grade 8' }],
@@ -155,7 +155,7 @@ const teachers: SeedTeacher[] = [
 
 /** A teacher who applied but is still awaiting admin review (tests the approval workflow). */
 const pendingTeacher = {
-  email: 'pending.teacher@teachme.dev', name: 'Rahul Verma', headline: 'Mathematics teacher with 4 years of coaching experience', bio: 'I coach Class 9-10 mathematics students in Pune and want to bring my structured revision method online. Waiting for profile review.',
+  email: 'pending.teacher@teachme.dev', name: 'Rahul Verma', headline: 'Mathematics topper with 4 years of coaching experience', bio: 'I coach Class 9-10 mathematics students in Pune and want to bring my structured revision method online. Waiting for profile review.',
 };
 
 const students = [

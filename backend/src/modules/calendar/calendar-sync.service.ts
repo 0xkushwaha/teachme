@@ -65,7 +65,7 @@ export class CalendarSyncService {
     }
     const token = await this.connections.activeToken(b.teacher.user.id);
     if (!token) {
-      await this.upsertMeeting(b.id, { status: 'NOT_CONFIGURED', lastError: 'Teacher has not connected Google Calendar' });
+      await this.upsertMeeting(b.id, { status: 'NOT_CONFIGURED', lastError: 'Topper has not connected Google Calendar' });
       return 'teacher_not_connected';
     }
 
@@ -210,7 +210,7 @@ export class CalendarSyncService {
     await this.prisma.calendarEvent.update({ where: { id: eventRowId }, data: { status: 'FAILED', lastError: message.slice(0, 300), attempts: { increment: 1 } } });
     if (e instanceof CalendarProviderError && e.authRevoked) {
       await this.connections.markRevoked(connectionId, 'Google access was revoked or expired');
-      await this.prisma.meeting.updateMany({ where: { bookingId, status: { not: 'READY' } }, data: { status: 'FAILED', lastError: 'Teacher must reconnect Google Calendar' } });
+      await this.prisma.meeting.updateMany({ where: { bookingId, status: { not: 'READY' } }, data: { status: 'FAILED', lastError: 'Topper must reconnect Google Calendar' } });
       const teacher = await this.prisma.user.findUnique({ where: { id: teacherUserId }, select: { fullName: true } });
       await this.notifications.notify({
         userId: teacherUserId,

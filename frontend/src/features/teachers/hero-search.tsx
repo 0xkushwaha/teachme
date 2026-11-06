@@ -32,11 +32,11 @@ export function HeroSearch({ subjects }: { subjects: { slug: string; name: strin
       <div className="hidden h-6 w-px bg-border sm:block" />
       <div className="flex flex-1 items-center gap-2 px-3">
         <Search className="size-4 text-muted-foreground" aria-hidden />
-        <label className="sr-only" htmlFor="hero-q">Search teachers</label>
-        <input id="hero-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Teacher name or topic, e.g. “organic chemistry”" className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+        <label className="sr-only" htmlFor="hero-q">Search toppers</label>
+        <input id="hero-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Topper name or topic, e.g. “organic chemistry”" className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
       </div>
       <Button type="submit" size="lg" className="sm:h-11">
-        Find teachers
+        Find toppers
       </Button>
     </form>
   );

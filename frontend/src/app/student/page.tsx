@@ -14,7 +14,7 @@ export default function StudentOverview() {
   const q = useQuery({ queryKey: ['student', 'overview'], queryFn: accountService.studentOverview });
   return (
     <>
-      <PageHeader title={`Hi ${user ? firstName(user.fullName) : ''}`} description="Here’s what’s coming up." actions={<Button asChild><Link href="/student/find"><Search />Find a teacher</Link></Button>} />
+      <PageHeader title={`Hi ${user ? firstName(user.fullName) : ''}`} description="Here’s what’s coming up." actions={<Button asChild><Link href="/student/find"><Search />Find a topper</Link></Button>} />
       {q.isError ? (
         <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} />
       ) : q.isLoading || !q.data ? (
@@ -50,7 +50,7 @@ export default function StudentOverview() {
                 ))}
               </ul>
             ) : (
-              <div className="p-5"><EmptyState icon={<CalendarCheck2 />} title="No upcoming sessions" description="Find a teacher and pick a time that works for you." action={<Button asChild><Link href="/student/find">Browse teachers</Link></Button>} /></div>
+              <div className="p-5"><EmptyState icon={<CalendarCheck2 />} title="No upcoming sessions" description="Find a topper and pick a time that works for you." action={<Button asChild><Link href="/student/find">Browse toppers</Link></Button>} /></div>
             )}
           </Card>
         </div>

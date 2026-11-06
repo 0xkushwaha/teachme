@@ -9,13 +9,13 @@ import type { Catalogue, Paginated, PlatformConfig, TeacherCard as T } from '@/t
 
 
 const STEPS = [
-  { icon: CalendarCheck2, title: 'Pick a real time slot', body: 'Availability comes straight from each teacher’s working hours, in your timezone. Slots you see are bookable.' },
+  { icon: CalendarCheck2, title: 'Pick a real time slot', body: 'Availability comes straight from each topper’s working hours, in your timezone. Slots you see are bookable.' },
   { icon: CreditCard, title: 'Pay securely', body: 'Checkout runs on Razorpay. Your booking is confirmed only after our server verifies the payment.' },
   { icon: Video, title: 'Join on Google Meet', body: 'Your Meet link appears on the booking and in your email. Add the session to any calendar in one click.' },
 ];
 
 const FEATURES = [
-  { icon: ShieldCheck, title: 'Verified teachers', body: 'Every profile is reviewed by our team before it goes live.' },
+  { icon: ShieldCheck, title: 'Verified toppers', body: 'Every profile is reviewed by our team before it goes live.' },
   { icon: BellRing, title: 'Reminders that adapt', body: 'Email and in-app reminders before each session, rescheduled automatically when plans change.' },
   { icon: RefreshCcw, title: 'Clear, fair policies', body: 'See the exact refund you’d get before you pay. Reschedule from the booking page.' },
 ];
@@ -38,12 +38,12 @@ export default async function HomePage() {
           <Reveal>
             <p className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1 text-[12.5px] text-muted-foreground backdrop-blur">
               <span className="size-1.5 rounded-full bg-success" aria-hidden />
-              {config ? `${config.counts.teachers} verified teachers across ${config.counts.subjects} subjects` : 'Live 1:1 tutoring'}
+              {config ? `${config.counts.teachers} verified toppers across ${config.counts.subjects} subjects` : 'Live 1:1 tutoring'}
             </p>
           </Reveal>
           <Reveal delay={0.05}>
             <h1 className="mt-6 max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.025em] sm:text-6xl">
-              Learn from a teacher who <span className="bg-gradient-to-r from-accent to-secondary bg-clip-text text-transparent">fits how you think.</span>
+              Learn from a topper who <span className="bg-gradient-to-r from-accent to-secondary bg-clip-text text-transparent">fits how you think.</span>
             </h1>
           </Reveal>
           <Reveal delay={0.1}>
@@ -73,12 +73,12 @@ export default async function HomePage() {
         <Reveal>
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Teachers students book</h2>
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Toppers students book</h2>
               <p className="mt-2 text-muted-foreground">Real profiles, real rates, real availability.</p>
             </div>
             <Button asChild variant="secondary" className="hidden sm:inline-flex">
               <Link href="/teachers">
-                All teachers <ArrowRight />
+                All toppers <ArrowRight />
               </Link>
             </Button>
           </div>
@@ -90,7 +90,7 @@ export default async function HomePage() {
             </Reveal>
           ))}
         </div>
-        {!teachers && <p className="mt-8 text-sm text-muted-foreground">Teachers are temporarily unavailable. Please refresh in a moment.</p>}
+        {!teachers && <p className="mt-8 text-sm text-muted-foreground">Toppers are temporarily unavailable. Please refresh in a moment.</p>}
       </section>
 
       <section className="border-y border-border bg-surface-2/50">

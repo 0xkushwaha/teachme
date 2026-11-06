@@ -23,7 +23,7 @@ export function PolicyText({ policy }: { policy: Quote['policy'] }) {
     <ul className="space-y-1.5 text-[13px] leading-relaxed text-muted-foreground">
       <li>Full refund if you cancel at least <strong className="text-foreground">{c.fullRefundHours}h</strong> before the session.</li>
       <li>{c.partialRefundPercent}% refund if you cancel at least {c.partialRefundHours}h before; no refund after that.</li>
-      <li>If your teacher cancels, you get a full refund.</li>
+      <li>If your topper cancels, you get a full refund.</li>
       <li>Reschedule up to {r.maxReschedules}× when at least {r.minHoursBefore}h remain.</li>
     </ul>
   );

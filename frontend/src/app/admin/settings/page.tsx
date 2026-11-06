@@ -13,10 +13,10 @@ import { adminService } from '@/services/admin';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const FLAG_LABELS: Record<string, string> = {
   studentRegistration: 'Student registration open',
-  teacherRegistration: 'Teacher applications open',
+  teacherRegistration: 'Topper applications open',
   googleCalendarSync: 'Google Calendar sync',
   meetCreation: 'Create Google Meet links',
-  teacherSelfPricing: 'Teachers can change their own rates',
+  teacherSelfPricing: 'Toppers can change their own rates',
 };
 
 function JsonSetting({ s }: { s: { key: string; description: string; value: any } }) {

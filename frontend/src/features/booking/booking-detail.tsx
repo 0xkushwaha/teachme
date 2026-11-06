@@ -35,7 +35,7 @@ export function BookingDetail({ id, viewer }: { id: string; viewer: Viewer }) {
   if (!q.data) return <Skeleton className="h-96 rounded-2xl" />;
   const b = q.data;
   const upcoming = b.status === 'CONFIRMED' && new Date(b.startAt).getTime() > Date.now();
-  const other = viewer === 'student' ? { name: b.teacher.name, avatar: b.teacher.avatarUrl, label: 'Teacher' } : { name: b.student.name, avatar: null, label: 'Student' };
+  const other = viewer === 'student' ? { name: b.teacher.name, avatar: b.teacher.avatarUrl, label: 'Topper' } : { name: b.student.name, avatar: null, label: 'Student' };
   const policy = b.policy.reschedule;
   const canReschedule = upcoming && b.rescheduleCount < policy.maxReschedules && (viewer === 'teacher' || new Date(b.startAt).getTime() - Date.now() >= policy.minHoursBefore * 3_600_000);
 
@@ -76,7 +76,7 @@ export function BookingDetail({ id, viewer }: { id: string; viewer: Viewer }) {
             )}
             {b.studentNote && (
               <div>
-                <p className="text-[12px] text-muted-foreground">{viewer === 'student' ? 'Your note to the teacher' : 'Note from the student'}</p>
+                <p className="text-[12px] text-muted-foreground">{viewer === 'student' ? 'Your note to the topper' : 'Note from the student'}</p>
                 <p className="mt-1 whitespace-pre-line text-sm">{b.studentNote}</p>
               </div>
             )}
@@ -146,7 +146,7 @@ export function BookingDetail({ id, viewer }: { id: string; viewer: Viewer }) {
   );
 }
 
-/** Teachers confirm a session took place; otherwise it completes automatically shortly after it ends. */
+/** Toppers confirm a session took place; otherwise it completes automatically shortly after it ends. */
 function CompletePanel({ b }: { b: Booking }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -191,12 +191,12 @@ function MeetingPanel({ b, viewer }: { b: Booking; viewer: Viewer }) {
           ) : m?.status === 'FAILED' ? (
             <>
               <p className="flex items-center gap-1.5 font-medium"><AlertTriangle className="size-4 text-danger" />Meeting link couldn’t be created</p>
-              <p className="text-[13px] text-muted-foreground">{viewer === 'teacher' ? m.lastError ?? 'Google returned an error.' : 'Your teacher has been notified. You can also contact support.'}</p>
+              <p className="text-[13px] text-muted-foreground">{viewer === 'teacher' ? m.lastError ?? 'Google returned an error.' : 'Your topper has been notified. You can also contact support.'}</p>
             </>
           ) : m?.status === 'NOT_CONFIGURED' ? (
             <>
               <p className="font-medium">Meeting link not available yet</p>
-              <p className="text-[13px] text-muted-foreground">{viewer === 'teacher' ? <>Connect Google Calendar to create Meet links automatically. <Link className="text-accent underline" href="/teacher/integrations">Connect now</Link></> : 'Your teacher will share the joining details before the session. You’ll be notified.'}</p>
+              <p className="text-[13px] text-muted-foreground">{viewer === 'teacher' ? <>Connect Google Calendar to create Meet links automatically. <Link className="text-accent underline" href="/teacher/integrations">Connect now</Link></> : 'Your topper will share the joining details before the session. You’ll be notified.'}</p>
             </>
           ) : (
             <>

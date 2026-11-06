@@ -89,7 +89,7 @@ export function BookingWidget({ teacher, initialSubject }: { teacher: TeacherPro
 
         {slot && (
           <div className="space-y-1.5">
-            <Label htmlFor="bw-note">Anything your teacher should know? (optional)</Label>
+            <Label htmlFor="bw-note">Anything your topper should know? (optional)</Label>
             <Textarea id="bw-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} placeholder="e.g. Chapter 7, rotational motion — I struggle with torque problems." />
           </div>
         )}

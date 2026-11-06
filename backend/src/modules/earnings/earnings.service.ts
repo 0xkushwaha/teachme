@@ -284,7 +284,7 @@ export class EarningsService {
   /** Admin correction (e.g. a dispute resolved after completion). Never edits existing rows. */
   async addAdjustment(admin: AuthUser, teacherId: string, amountMinor: number, description: string) {
     const t = await this.prisma.teacherProfile.findUnique({ where: { id: teacherId }, select: { id: true } });
-    if (!t) throw AppError.notFound('Teacher');
+    if (!t) throw AppError.notFound('Topper');
     return this.prisma.$transaction(async (tx) => {
       const e = await tx.teacherEarning.create({
         data: { teacherId, type: 'ADJUSTMENT', amountMinor, description, earnedAt: new Date(), createdById: admin.id },
@@ -359,7 +359,7 @@ export class EarningsService {
          AND p.status IN ('CAPTURED', 'PARTIALLY_REFUNDED', 'REFUNDED')
        ORDER BY p."capturedAt"
        LIMIT 50000`;
-    const header = ['booking_id', 'captured_at', 'session_at', 'status', 'student', 'teacher', 'subject', 'price', 'platform_fee', 'tax', 'total', 'paid', 'refunded', 'teacher_earning', 'payout_status'];
+    const header = ['booking_id', 'captured_at', 'session_at', 'status', 'student', 'topper', 'subject', 'price', 'platform_fee', 'tax', 'total', 'paid', 'refunded', 'topper_earning', 'payout_status'];
     const money = (v: number | bigint | null) => (v === null ? '' : (Number(v) / 100).toFixed(2));
     const lines = rows.map((r) =>
       [r.booking_id, r.captured_at.toISOString(), r.session_at.toISOString(), r.status, r.student, r.teacher, r.subject, money(r.price), money(r.fee), money(r.tax), money(r.total), money(r.paid), money(r.refunded), money(r.earning), r.payout_status ?? '']

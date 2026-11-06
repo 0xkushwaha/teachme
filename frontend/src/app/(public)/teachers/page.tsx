@@ -4,7 +4,7 @@ import { TeacherDirectory } from '@/features/teachers/teacher-directory';
 import { serverGet } from '@/lib/server-api';
 import type { Catalogue } from '@/types/api';
 
-export const metadata: Metadata = { title: 'Find a teacher', description: 'Search and filter verified teachers by subject, price, language, experience and availability.' };
+export const metadata: Metadata = { title: 'Find a topper', description: 'Search and filter verified toppers by subject, price, language, experience and availability.' };
 
 export default async function TeachersPage() {
   const catalogue = await serverGet<Catalogue>('/subjects');

@@ -11,7 +11,7 @@ import { cn } from '@/utils/cn';
 
 const NAV = [
   { href: '/subjects', label: 'Subjects' },
-  { href: '/teachers', label: 'Teachers' },
+  { href: '/teachers', label: 'Toppers' },
   { href: '/how-it-works', label: 'How it works' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/faq', label: 'FAQ' },

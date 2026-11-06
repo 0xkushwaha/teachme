@@ -7,17 +7,17 @@ export const metadata: Metadata = { title: 'Terms of service' };
 export default function Terms() {
   return (
     <LegalPage title="Terms of service" updated="24 October 2026">
-      <p>These terms govern your use of TeachMe, a marketplace that connects students with independent teachers for live online sessions. By creating an account you agree to them.</p>
+      <p>These terms govern your use of TeachMe, a marketplace that connects students with independent toppers for live online sessions. By creating an account you agree to them.</p>
       <h2>1. Accounts</h2>
       <ul>
         <li>You must provide accurate information and keep your password confidential. You are responsible for activity on your account.</li>
         <li>Students under 18 should use TeachMe with the involvement of a parent or guardian.</li>
         <li>We may suspend accounts that breach these terms, misuse the platform or put other users at risk.</li>
       </ul>
-      <h2>2. Teachers</h2>
+      <h2>2. Toppers</h2>
       <ul>
-        <li>Teachers are independent providers, not employees of TeachMe. Profiles are reviewed before they are published, but teachers are responsible for the accuracy of their qualifications and the quality of their sessions.</li>
-        <li>Teachers agree to keep their availability up to date and to attend confirmed sessions.</li>
+        <li>Toppers are independent providers, not employees of TeachMe. Profiles are reviewed before they are published, but toppers are responsible for the accuracy of their qualifications and the quality of their sessions.</li>
+        <li>Toppers agree to keep their availability up to date and to attend confirmed sessions.</li>
       </ul>
       <h2>3. Bookings and payment</h2>
       <ul>

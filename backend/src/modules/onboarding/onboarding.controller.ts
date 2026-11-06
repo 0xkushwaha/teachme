@@ -50,6 +50,12 @@ export class AdminInvitationsController {
   revoke(@CurrentUser() admin: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.onboarding.revoke(admin, id);
   }
+
+  @HttpCode(204)
+  @Delete(':id')
+  remove(@CurrentUser() admin: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.onboarding.removeInvitation(admin, id);
+  }
 }
 
 /** Tokens travel in the request body (not the URL) so they don't land in access logs. */

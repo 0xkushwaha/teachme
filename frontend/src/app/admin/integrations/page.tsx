@@ -38,7 +38,7 @@ export default function IntegrationHealth() {
         <div className="space-y-6">
           <div className="grid gap-3 sm:grid-cols-3">
             <Provider name="Razorpay" ok={h.providers.razorpay.configured && h.providers.razorpay.webhookConfigured} detail={h.providers.razorpay.configured ? `${h.providers.razorpay.mode} mode · webhook ${h.providers.razorpay.webhookConfigured ? 'configured' : 'secret missing'}` : 'API keys not configured'} />
-            <Provider name="Google Calendar / Meet" ok={h.providers.google.configured} detail={h.providers.google.configured ? `${h.calendar.connections.ACTIVE ?? 0} active teacher connections · ${h.calendar.connections.REVOKED ?? 0} revoked` : 'OAuth client not configured'} />
+            <Provider name="Google Calendar / Meet" ok={h.providers.google.configured} detail={h.providers.google.configured ? `${h.calendar.connections.ACTIVE ?? 0} active topper connections · ${h.calendar.connections.REVOKED ?? 0} revoked` : 'OAuth client not configured'} />
             <Provider name="Email" ok={h.providers.email.configured} detail={h.providers.email.configured ? `${h.providers.email.provider} · ${h.email.failed} failed · ${h.email.stalePending} stuck >10 min` : 'SMTP not configured'} />
           </div>
           <div className="grid gap-6 lg:grid-cols-2">

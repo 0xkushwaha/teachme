@@ -245,7 +245,7 @@ describe('Teacher application, documents and approval', () => {
     expect(profile).toMatchObject({ approvalStatus: 'APPROVED', rejectionReason: null, approvedById: admin.user.id });
     await deliverEmails(ctx, t.user.id, admin.user.id);
     expect(ctx.email.sent.some((m) => m.to === t.user.email && m.subject.includes('approved'))).toBe(true);
-    expect(ctx.email.sent.some((m) => m.to === admin.user.email && m.subject.includes('New teacher application'))).toBe(true);
+    expect(ctx.email.sent.some((m) => m.to === admin.user.email && m.subject.includes('New topper application'))).toBe(true);
   });
 
   it('serves uploaded avatars publicly with safe headers and removes replaced ones', async () => {

@@ -21,15 +21,15 @@ export default async function PricingPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <PageHeader eyebrow="Pricing" title="Pay per session. No subscriptions." description="Each teacher sets their own hourly rate. You see the full amount — including fees and taxes — before you pay." />
+      <PageHeader eyebrow="Pricing" title="Pay per session. No subscriptions." description="Each topper sets their own hourly rate. You see the full amount — including fees and taxes — before you pay." />
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-6"><p className="text-[13px] text-muted-foreground">Teacher’s rate</p><p className="mt-2 text-2xl font-semibold">Set by teacher</p><p className="mt-2 text-sm text-muted-foreground">Shown per hour on every profile, prorated for 30/45/90-minute sessions.</p></Card>
+        <Card className="p-6"><p className="text-[13px] text-muted-foreground">Topper’s rate</p><p className="mt-2 text-2xl font-semibold">Set by topper</p><p className="mt-2 text-sm text-muted-foreground">Shown per hour on every profile, prorated for 30/45/90-minute sessions.</p></Card>
         <Card className="p-6"><p className="text-[13px] text-muted-foreground">Platform fee</p><p className="mt-2 text-2xl font-semibold">{fee !== null ? `${fee}%` : '—'}</p><p className="mt-2 text-sm text-muted-foreground">Covers payments, scheduling, reminders and support.</p></Card>
         <Card className="p-6"><p className="text-[13px] text-muted-foreground">Taxes</p><p className="mt-2 text-2xl font-semibold">{tax !== null ? `${tax}% GST` : '—'}</p><p className="mt-2 text-sm text-muted-foreground">{c?.pricing.taxBase === 'SUBTOTAL' ? 'Applied to the session price plus fee.' : 'Applied to the platform fee only.'}</p></Card>
       </div>
       {c && example && (
         <Card className="mt-8 p-6">
-          <h2 className="font-semibold">Example: 60 minutes with a ₹1,000/hour teacher</h2>
+          <h2 className="font-semibold">Example: 60 minutes with a ₹1,000/hour topper</h2>
           <dl className="mt-4 max-w-sm space-y-2 text-sm">
             <div className="flex justify-between"><dt className="text-muted-foreground">Session</dt><dd>{inr(example.price)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee ({fee}%)</dt><dd>{inr(example.fee)}</dd></div>
@@ -41,7 +41,7 @@ export default async function PricingPage() {
       <p className="mt-6 text-sm text-muted-foreground">
         Refunds follow our <Link href="/legal/cancellation" className="text-accent underline-offset-4 hover:underline">cancellation policy</Link>. Payments are processed by Razorpay; TeachMe never sees or stores your card details.
       </p>
-      <Button asChild className="mt-8" size="lg"><Link href="/teachers">Browse teachers</Link></Button>
+      <Button asChild className="mt-8" size="lg"><Link href="/teachers">Browse toppers</Link></Button>
     </div>
   );
 }

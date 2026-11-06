@@ -51,6 +51,6 @@ export class AvailabilityController {
 }
 
 export function teacherId(user: AuthUser): string {
-  if (!user.teacherProfileId) throw AppError.forbidden('Teacher profile required');
+  if (!user.teacherProfileId) throw AppError.forbidden('Topper profile required');
   return user.teacherProfileId;
 }

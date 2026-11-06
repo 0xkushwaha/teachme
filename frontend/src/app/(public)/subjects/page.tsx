@@ -6,13 +6,13 @@ import { serverGet } from '@/lib/server-api';
 import type { Catalogue } from '@/types/api';
 import { formatMoney } from '@/utils/format';
 
-export const metadata: Metadata = { title: 'Browse subjects', description: 'Every subject taught on TeachMe, with the number of verified teachers and starting rates.' };
+export const metadata: Metadata = { title: 'Browse subjects', description: 'Every subject taught on TeachMe, with the number of verified toppers and starting rates.' };
 
 export default async function SubjectsPage() {
   const catalogue = await serverGet<Catalogue>('/subjects');
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <PageHeader eyebrow="Subjects" title="What would you like to learn?" description="Pick a subject to see every teacher who teaches it, their rates and their next available times." />
+      <PageHeader eyebrow="Subjects" title="What would you like to learn?" description="Pick a subject to see every topper who teaches it, their rates and their next available times." />
       {!catalogue && <p className="text-sm text-muted-foreground">Subjects are temporarily unavailable. Please refresh shortly.</p>}
       <div className="space-y-12">
         {catalogue?.categories.filter((c) => c.subjects.length).map((c) => (
@@ -25,7 +25,7 @@ export default async function SubjectsPage() {
                     <h3 className="font-semibold tracking-tight group-hover:text-accent">{s.name}</h3>
                     <p className="mt-1.5 line-clamp-2 flex-1 text-[13.5px] leading-relaxed text-muted-foreground">{s.description}</p>
                     <div className="mt-4 flex items-center justify-between text-[13px]">
-                      <span className="text-muted-foreground">{s.teacherCount ? `${s.teacherCount} teacher${s.teacherCount === 1 ? '' : 's'}` : 'No teachers yet'}</span>
+                      <span className="text-muted-foreground">{s.teacherCount ? `${s.teacherCount} topper${s.teacherCount === 1 ? '' : 's'}` : 'No toppers yet'}</span>
                       {s.fromHourlyRateMinor && <span className="font-medium tabular-nums">from {formatMoney(s.fromHourlyRateMinor)}/hr</span>}
                     </div>
                   </Link>

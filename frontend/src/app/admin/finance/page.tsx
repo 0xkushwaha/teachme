@@ -48,17 +48,17 @@ export default function AdminFinance() {
             <StatCard label="Platform fees" value={formatMoney(d.platformFeeMinor)} hint={`plus ${formatMoney(d.taxMinor)} tax collected`} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Teacher earnings accrued" value={formatMoney(d.teacherEarningsMinor)} hint="Completed sessions in range" />
+            <StatCard label="Topper earnings accrued" value={formatMoney(d.teacherEarningsMinor)} hint="Completed sessions in range" />
             <StatCard label="Payouts paid" value={formatMoney(d.payoutsPaidMinor)} hint={`${d.payoutsPaid} transfers in range`} />
-            <StatCard label="Owed to teachers now" value={formatMoney(d.outstandingTeacherBalanceMinor)} hint="All unpaid earnings, today" />
+            <StatCard label="Owed to toppers now" value={formatMoney(d.outstandingTeacherBalanceMinor)} hint="All unpaid earnings, today" />
             <StatCard label="Open payout requests" value={formatMoney(d.openPayouts.amountMinor)} hint={<Link href="/admin/payouts" className="underline underline-offset-4">{d.openPayouts.count} to process</Link>} />
           </div>
           <Card>
-            <CardHeader title="Top teachers by earnings" description="In the selected range" />
+            <CardHeader title="Top toppers by earnings" description="In the selected range" />
             {d.topTeachers.length === 0 ? <p className="p-5 text-sm text-muted-foreground">No completed, paid sessions in this range.</p> : (
               <div className="p-3">
                 <Table className="border-0 shadow-none">
-                  <thead><tr><th>Teacher</th><th className="text-right">Sessions</th><th className="text-right">Earned</th></tr></thead>
+                  <thead><tr><th>Topper</th><th className="text-right">Sessions</th><th className="text-right">Earned</th></tr></thead>
                   <tbody>
                     {d.topTeachers.map((t) => (
                       <tr key={t.teacherId}><td><Link href={`/admin/teachers/${t.teacherId}`} className="hover:underline">{t.name}</Link></td><td className="text-right tabular-nums">{t.sessions}</td><td className="text-right tabular-nums">{formatMoney(t.earnedMinor)}</td></tr>
@@ -68,7 +68,7 @@ export default function AdminFinance() {
               </div>
             )}
           </Card>
-          <p className="text-[12.5px] text-muted-foreground">Collected and fees count payments captured in the range. Teacher earnings are recognised when a paid session completes; each teacher earns their session price, reduced pro rata by any refund. The CSV export lists every paid booking in the range (up to 50,000 rows).</p>
+          <p className="text-[12.5px] text-muted-foreground">Collected and fees count payments captured in the range. Topper earnings are recognised when a paid session completes; each topper earns their session price, reduced pro rata by any refund. The CSV export lists every paid booking in the range (up to 50,000 rows).</p>
         </div>
       )}
     </>

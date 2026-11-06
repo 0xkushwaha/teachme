@@ -89,7 +89,7 @@ export class TeachersService {
       where: { slug, approvalStatus: 'APPROVED', user: { status: 'ACTIVE' } },
       include: PUBLIC_INCLUDE,
     });
-    if (!t) throw AppError.notFound('Teacher');
+    if (!t) throw AppError.notFound('Topper');
     const [completed, cancellation] = await Promise.all([
       this.prisma.booking.count({ where: { teacherId: t.id, status: 'COMPLETED' } }),
       this.settings.get('policy.cancellation'),
@@ -112,7 +112,7 @@ export class TeachersService {
       where: { teacherId_subjectId: { teacherId, subjectId } },
       include: { teacher: true },
     });
-    if (!ts || !ts.isActive || ts.teacher.approvalStatus !== 'APPROVED') throw AppError.notFound('Teacher subject');
+    if (!ts || !ts.isActive || ts.teacher.approvalStatus !== 'APPROVED') throw AppError.notFound('Topper subject');
     if (!ts.teacher.sessionDurations.includes(durationMinutes))
       throw AppError.badRequest(ErrorCode.VALIDATION_FAILED, 'Session length not offered');
     const [pricing, cancellation, reschedule, rules] = await Promise.all([

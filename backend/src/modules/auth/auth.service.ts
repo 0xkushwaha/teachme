@@ -56,7 +56,7 @@ export class AuthService {
     if (dto.role === 'STUDENT' && !flags.studentRegistration)
       throw new AppError(ErrorCode.FEATURE_DISABLED, 'Student registration is currently closed', HttpStatus.FORBIDDEN);
     if (dto.role === 'TEACHER' && !flags.teacherRegistration)
-      throw new AppError(ErrorCode.FEATURE_DISABLED, 'Teacher applications are currently closed', HttpStatus.FORBIDDEN);
+      throw new AppError(ErrorCode.FEATURE_DISABLED, 'Topper applications are currently closed', HttpStatus.FORBIDDEN);
 
     const timezone = dto.timezone && isValidTimezone(dto.timezone) ? dto.timezone : 'Asia/Kolkata';
     const passwordHash = await this.passwords.hash(dto.password);

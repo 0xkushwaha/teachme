@@ -12,7 +12,7 @@ import { formatMoney } from '@/utils/format';
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const t = await serverGet<TeacherProfile>(`/teachers/${slug}`);
-  return t ? { title: `${t.name} — ${t.subjects.map((s) => s.name).join(', ')}`, description: t.headline } : { title: 'Teacher not found' };
+  return t ? { title: `${t.name} — ${t.subjects.map((s) => s.name).join(', ')}`, description: t.headline } : { title: 'Topper not found' };
 }
 
 export default async function TeacherPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ subject?: string }> }) {
@@ -24,7 +24,7 @@ export default async function TeacherPage({ params, searchParams }: { params: Pr
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <nav aria-label="Breadcrumb" className="mb-6 text-[13px] text-muted-foreground">
-        <Link href="/teachers" className="hover:text-foreground">Teachers</Link> / <span className="text-foreground">{t.name}</span>
+        <Link href="/teachers" className="hover:text-foreground">Toppers</Link> / <span className="text-foreground">{t.name}</span>
       </nav>
       <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
         <div className="space-y-8">
@@ -84,7 +84,7 @@ export default async function TeacherPage({ params, searchParams }: { params: Pr
               {t.sessionDurations.map((d) => <Badge key={d}><Timer className="size-3" />{d} min</Badge>)}
               <Badge><Clock className="size-3" />Book at least {notice} ahead</Badge>
               <Badge>Up to {t.maxAdvanceDays} days in advance</Badge>
-              <Badge>Teacher timezone: {t.timezone.replace(/_/g, ' ')}</Badge>
+              <Badge>Topper timezone: {t.timezone.replace(/_/g, ' ')}</Badge>
             </div>
           </section>
         </div>
